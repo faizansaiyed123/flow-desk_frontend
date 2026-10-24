@@ -46,15 +46,19 @@ Choose **Forgot password?**, enter an email address, and submit. The backend ret
 
 ### Missing and invalid reset tokens
 
-![Invalid password reset link](visuals/00-invalid-reset-link.png)
+![Reset page without a token](visuals/00-missing-reset-token.png)
 
 A reset URL without a token keeps the action disabled. An unknown token is submitted to the real reset endpoint and must return an HTTP client error rather than changing a password.
 
+![Invalid password reset link](visuals/00-invalid-reset-link.png)
+
 ### Invitation links
 
-![Invalid invitation link](visuals/00-invalid-invitation.png)
+![Invitation page without a token](visuals/00-missing-invitation-token.png)
 
-An invitation without a token is rejected in the UI. An unknown token is sent to the public invitation-preview API and returns an error state. The backend suite separately tests invitation creation and acceptance rules; a complete valid invitation-acceptance browser journey remains a separate item in the checklist.
+An invitation without a token is rejected in the UI. An unknown token is sent to the public invitation-preview API and returns an error state.
+
+![Invalid invitation link](visuals/00-invalid-invitation.png)
 
 ### Register a workspace
 
@@ -186,11 +190,25 @@ The Profile tab is now editable instead of read-only for the user's name. Saving
 
 The Workspace tab reads the current tenant from the API. The walkthrough leaves the workspace name unchanged so the database assertions can identify the test tenant deterministically.
 
-### Team invitation
+### Create an invitation
 
 ![Pending team invitation](visuals/17-settings-team-invitation.png)
 
 From **Settings → Team → Invite**, enter the invited email and submit. The test checks the real POST /api/v1/tenants/invitations response and the pending invitation displayed on the page.
+
+### Accept an invitation and update the new member's role
+
+![Accepted invitation](visuals/17b-invitation-accepted.png)
+
+The walkthrough follows the token emitted by the backend's development-mode mail logger for a real invitation row, opens the public acceptance page in a second browser context, creates the invited user's account through the UI, and checks the actual POST /api/v1/tenants/invitations/accept response.
+
+![Workspace member role updated](visuals/17c-team-member-role-updated.png)
+
+After reloading the owner's workspace, the test reads the new member from GET /api/v1/tenants/members and changes the member's role through the UI. The actual PATCH /api/v1/tenants/members/{membership_id}/role request must succeed.
+
+![Invitation revoked](visuals/17d-team-invitation-revoked.png)
+
+A separate pending invitation is revoked from the Team tab. The test verifies DELETE /api/v1/tenants/invitations/{invitation_id}, and the database check confirms the invitation status is revoked.
 
 ### API key
 
@@ -244,7 +262,7 @@ The workflow runs the backend API suite, frontend unit tests, frontend lint and 
 | Task/Kanban CRUD, status, ordering, comments | Browser E2E + task API tests + SQL status check | Pending CI run |
 | Manual time, entry editing, running timer, stopping timer | Browser E2E + API response checks + SQL read-back | Pending CI run |
 | Invoice creation/editing, sent/paid/overdue lifecycle | Browser E2E + API response checks + SQL/line-item checks | Pending CI run |
-| Tenant membership and invitations | Browser E2E + tenant API tests + SQL invitation check | Pending CI run |
+| Tenant membership, invitation acceptance, role update and revocation | Real browser/API flows + SQL membership/role/invitation checks | Pending CI run |
 | API-key creation/revocation and secret handling | Browser E2E + API-key API tests + SQL hash check | Pending CI run |
 | Webhook configuration and delivery logging | Browser configuration test + webhook API tests + SQL check | Pending CI run |
 | Global search and tenant isolation | Browser E2E + backend search/activity tests | Pending CI run |
