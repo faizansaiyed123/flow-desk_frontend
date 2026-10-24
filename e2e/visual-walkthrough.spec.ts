@@ -524,7 +524,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   const acceptedMember = teamMembers.find((member: { user: { email: string }; membership_id: string }) =>
     member.user.email === acceptedInviteEmail
   );
-  expect(acceptedMember).toBeTruthy();
+  if (!acceptedMember) throw new Error("Accepted invitation did not create a workspace membership.");
   const acceptedMemberRow = page.getByText("FlowDesk Invited Member").locator("..").locator("..");
   const memberRoleUpdate = page.waitForResponse((response) =>
     response.request().method() === "PATCH" &&
