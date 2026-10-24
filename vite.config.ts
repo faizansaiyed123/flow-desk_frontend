@@ -20,7 +20,7 @@ export default defineConfig({
     proxy: {
       '/api': {
         // Match the backend's documented/default Uvicorn port (Dockerfile + E2E setup).
-        target: 'http://localhost:8000',
+        target: 'http://127.0.0.1:8000',
         changeOrigin: true,
       },
     },
