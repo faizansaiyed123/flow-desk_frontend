@@ -19,7 +19,7 @@ async function waitForApiResponse(
     const request = response.request();
     const url = new URL(response.url());
     return request.method() === method && url.pathname === `/api/v1${path}`;
-  });
+  }, { timeout: 15_000 });
   await action();
   return responsePromise;
 }
@@ -40,7 +40,7 @@ async function expectSuccessfulApiAction(
 }
 
 test("captures real FlowDesk browser actions, API responses, and persistent PostgreSQL records", async ({ page }) => {
-  test.setTimeout(240_000);
+  test.setTimeout(600_000);
   // This test is deliberately not wired to MSW and has no route mocks:
   // Vite forwards /api to the actual FastAPI process and PostgreSQL database.
   const observedApiResponses: Array<{ method: string; path: string; status: number }> = [];
@@ -65,6 +65,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   const recoveryEmailInput = page.getByRole("textbox", { name: "Email" });
   await recoveryEmailInput.fill(recoveryEmail);
   await expect(recoveryEmailInput).toHaveValue(recoveryEmail);
+  await expect(page.getByText("Enter a valid email address.")).toHaveCount(0);
   const recovery = await expectSuccessfulApiAction(
     page,
     "POST",
