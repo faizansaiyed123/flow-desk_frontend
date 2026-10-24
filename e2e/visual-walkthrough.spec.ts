@@ -61,6 +61,8 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await capture(page, "00-login");
 
   await page.getByRole("link", { name: /forgot password/i }).click();
+  await expect(page).toHaveURL(/forgot-password$/);
+  await expect(page.getByRole("heading", { name: "Reset your password" })).toBeVisible();
   const recoveryEmail = uniqueEmail();
   const recoveryEmailInput = page.getByRole("textbox", { name: "Email" });
   await recoveryEmailInput.fill(recoveryEmail);
