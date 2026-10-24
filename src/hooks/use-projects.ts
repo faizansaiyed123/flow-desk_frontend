@@ -6,7 +6,7 @@ import { toast } from "@/stores/toast-store";
 export function useProjects(params: { search?: string; status?: string; client_id?: string; page?: number } = {}) {
   return useQuery({
     queryKey: ["projects", params],
-    queryFn: () => api.get<Page<Project>>("/projects", { ...params, page_size: 50 }),
+    queryFn: () => api.get<Page<ProjectWithStats>>("/projects", { ...params, page_size: 50 }),
   });
 }
 
