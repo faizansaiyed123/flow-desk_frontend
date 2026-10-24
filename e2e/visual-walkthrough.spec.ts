@@ -981,7 +981,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "DELETE",
     "/invoices/" + disposableDraftInvoice.id,
     async () => {
-      await page.locator("button:has(svg.lucide-trash2)").click();
+      await page.getByRole("button", { name: "Delete invoice", exact: true }).click();
       const confirmation = page.getByRole("dialog");
       await expect(confirmation.getByText("Delete this invoice?")).toBeVisible();
       await confirmation.getByRole("button", { name: "Delete invoice", exact: true }).click();

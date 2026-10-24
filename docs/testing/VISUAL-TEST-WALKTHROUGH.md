@@ -170,6 +170,10 @@ Select **Send**. The browser verifies the POST /api/v1/invoices/{invoice_id}/sen
 
 ![Paid invoice after reload](visuals/14-invoice-paid-reloaded.png)
 
+![Deleted draft invoice](visuals/14c-invoice-draft-deleted.png)
+
+A separate disposable draft is deleted through its named **Delete invoice** control. The walkthrough checks the confirmation dialog and real DELETE response, then verifies the invoice disappears from the list and its row is absent from PostgreSQL; the paid invoice remains intact.
+
 Select **Mark paid**, verify the API response, reload the invoice, and read its status from a fresh GET request. PostgreSQL verification checks the paid invoice row and its stored line item/amount.
 
 ### Mark a past-due invoice overdue

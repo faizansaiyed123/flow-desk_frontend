@@ -114,7 +114,7 @@ export function InvoiceDetailPage() {
             </Button>
           )}
           {invoice.status === "draft" && (
-            <Button size="sm" variant="danger" onClick={() => setDeleteOpen(true)}>
+            <Button size="sm" variant="danger" aria-label="Delete invoice" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
           )}
