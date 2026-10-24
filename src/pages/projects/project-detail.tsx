@@ -6,6 +6,7 @@ import { useProject, useUpdateProject, useDeleteProject } from "@/hooks/use-proj
 import { useTimeEntries } from "@/hooks/use-time-entries";
 import { useGenerateInvoiceFromTime } from "@/hooks/use-invoices";
 import { KanbanBoard } from "@/components/kanban-board";
+import { ProjectAttachments } from "@/components/project-attachments";
 import { TaskDetailDialog } from "@/components/task-detail-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -99,6 +100,7 @@ export function ProjectDetailPage() {
         <TabsList className="mb-4">
           <TabsTrigger value="board">Board</TabsTrigger>
           <TabsTrigger value="time">Time</TabsTrigger>
+          <TabsTrigger value="files">Files</TabsTrigger>
         </TabsList>
         <TabsContent value="board">
           <KanbanBoard projectId={project.id} onOpenTask={setOpenTaskId} />
@@ -137,6 +139,9 @@ export function ProjectDetailPage() {
               </tbody>
             </table>
           </div>
+        </TabsContent>
+        <TabsContent value="files">
+          <ProjectAttachments projectId={project.id} />
         </TabsContent>
       </Tabs>
 
