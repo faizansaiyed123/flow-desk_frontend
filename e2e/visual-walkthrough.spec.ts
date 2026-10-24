@@ -295,8 +295,22 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "/time-entries",
     () => page.getByRole("button", { name: "Log time" }).click(),
   );
-  expect((await manualTime.json()).duration_minutes).toBe(45);
-  await expect(page.getByText("Manual verification entry")).toBeVisible();
+  const manualEntry = await manualTime.json();
+  expect(manualEntry.duration_minutes).toBe(45);
+  await expect(page.getByText("Manual verification entry edited")).toBeVisible();
+  const updatedManualTime = await expectSuccessfulApiAction(
+    page,
+    "PATCH",
+    "/time-entries/" + manualEntry.id,
+    async () => {
+      await page.getByRole("button", { name: "Edit time entry Manual verification entry" }).click();
+      const editDialog = page.getByRole("dialog");
+      await editDialog.getByLabel("Description").fill("Manual verification entry edited");
+      await editDialog.getByRole("button", { name: "Save time entry" }).click();
+    },
+  );
+  expect((await updatedManualTime.json()).description).toBe("Manual verification entry edited");
+  await expect(page.getByText("Manual verification entry edited")).toBeVisible();
   await capture(page, "08-time-tracking-manual-entry");
 
   await page.getByText("Select a project to start timing").click();
