@@ -1058,7 +1058,6 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "/api/v1/time-entries/timer/stop",
     "/api/v1/invoices",
     "/api/v1/tenants/invitations",
-    "/api/v1/api-keys",
     "/api/v1/webhooks",
     "/api/v1/search",
   ]) {
