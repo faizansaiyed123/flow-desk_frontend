@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { Play, Square, Plus, Clock, Trash2 } from "lucide-react";
-import { useRunningTimer, useStartTimer, useStopTimer, useTimeEntries, useCreateTimeEntry, useDeleteTimeEntry } from "@/hooks/use-time-entries";
+import { Play, Square, Plus, Clock, Trash2, Pencil } from "lucide-react";
+import { useRunningTimer, useStartTimer, useStopTimer, useTimeEntries, useCreateTimeEntry, useDeleteTimeEntry, useUpdateTimeEntry } from "@/hooks/use-time-entries";
 import { useProjects } from "@/hooks/use-projects";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { formatDateTime, formatMinutes } from "@/lib/format";
+import type { TimeEntry } from "@/types/api";
 
 function useElapsed(startedAt?: string) {
   const [elapsed, setElapsed] = useState(0);
@@ -29,6 +30,19 @@ function useElapsed(startedAt?: string) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+type EditTimeEntryValues = {
+  description: string;
+  started_at: string;
+  duration_minutes: number;
+  is_billable: boolean;
+};
+
+function toLocalDateTime(value: string) {
+  const date = new Date(value);
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
 export function TimeTrackingPage() {
   const { data: running } = useRunningTimer();
   const startTimer = useStartTimer();
@@ -36,6 +50,8 @@ export function TimeTrackingPage() {
   const { data: projects } = useProjects();
   const { data: entries } = useTimeEntries();
   const deleteEntry = useDeleteTimeEntry();
+  const updateEntry = useUpdateTimeEntry();
+  const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
   const [timerProjectId, setTimerProjectId] = useState("");
   const [manualOpen, setManualOpen] = useState(false);
   const elapsed = useElapsed(running?.started_at);
@@ -43,6 +59,18 @@ export function TimeTrackingPage() {
   const createEntry = useCreateTimeEntry();
   const { register, handleSubmit, control, reset } = useForm({
     defaultValues: { project_id: "", started_at: "", duration_minutes: 60, description: "" },
+  });
+
+  const editForm = useForm<EditTimeEntryValues>({
+    defaultValues: { description: "", started_at: "", duration_minutes: 60, is_billable: true },
+    values: editingEntry
+      ? {
+          description: editingEntry.description ?? "",
+          started_at: toLocalDateTime(editingEntry.started_at),
+          duration_minutes: editingEntry.duration_minutes ?? 60,
+          is_billable: editingEntry.is_billable,
+        }
+      : undefined,
   });
 
   return (
@@ -146,6 +174,55 @@ export function TimeTrackingPage() {
         </CardContent>
       </Card>
 
+      <Dialog
+        open={Boolean(editingEntry)}
+        onOpenChange={(open) => { if (!open) setEditingEntry(null); }}
+      >
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit time entry</DialogTitle></DialogHeader>
+          <form
+            onSubmit={editForm.handleSubmit((values) => {
+              if (!editingEntry) return;
+              updateEntry.mutate(
+                {
+                  id: editingEntry.id,
+                  data: {
+                    description: values.description || null,
+                    started_at: new Date(values.started_at).toISOString(),
+                    duration_minutes: Number(values.duration_minutes),
+                    is_billable: values.is_billable,
+                  },
+                },
+                { onSuccess: () => setEditingEntry(null) },
+              );
+            })}
+            className="space-y-4"
+            noValidate
+          >
+            <div>
+              <Label htmlFor="edit-time-description">Description</Label>
+              <Input id="edit-time-description" {...editForm.register("description")} />
+            </div>
+            <div>
+              <Label htmlFor="edit-time-started-at">Date &amp; time</Label>
+              <Input id="edit-time-started-at" type="datetime-local" {...editForm.register("started_at", { required: true })} />
+            </div>
+            <div>
+              <Label htmlFor="edit-time-duration">Minutes</Label>
+              <Input id="edit-time-duration" type="number" min="1" step="1" {...editForm.register("duration_minutes", { valueAsNumber: true, min: 1, required: true })} />
+            </div>
+            <label className="flex items-center gap-2 text-sm text-paper-300">
+              <input type="checkbox" {...editForm.register("is_billable")} />
+              Billable time
+            </label>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditingEntry(null)}>Cancel</Button>
+              <Button type="submit" loading={updateEntry.isPending}>Save time entry</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {entries?.items.length === 0 ? (
         <EmptyState icon={Clock} title="No time logged yet" description="Start a timer above or log time manually to begin tracking your billable hours." />
       ) : (
@@ -171,9 +248,22 @@ export function TimeTrackingPage() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     {!entry.is_invoiced && (
-                      <button onClick={() => deleteEntry.mutate(entry.id)} className="text-paper-500 hover:text-clay-400">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      <div className="inline-flex items-center gap-2">
+                        <button
+                          aria-label={"Edit time entry " + (entry.description || formatDateTime(entry.started_at))}
+                          onClick={() => setEditingEntry(entry)}
+                          className="text-paper-500 hover:text-brass-400"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          aria-label={"Delete time entry " + (entry.description || formatDateTime(entry.started_at))}
+                          onClick={() => deleteEntry.mutate(entry.id)}
+                          className="text-paper-500 hover:text-clay-400"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>
