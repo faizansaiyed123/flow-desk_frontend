@@ -283,14 +283,15 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   );
   const temporaryAttachment = await temporaryAttachmentResponse.json();
   expect(temporaryAttachment.project_id).toBe(project.id);
-  await expect(page.getByText("temporary-delete.txt")).toBeVisible();
+  const temporaryAttachmentRow = page.locator('[data-attachment-id="' + temporaryAttachment.id + '"]');
+  await expect(temporaryAttachmentRow.getByText("temporary-delete.txt", { exact: true })).toBeVisible();
   await expectSuccessfulApiAction(
     page,
     "DELETE",
     "/attachments/" + temporaryAttachment.id,
-    () => page.getByRole("button", { name: "Delete temporary-delete.txt" }).click(),
+    () => temporaryAttachmentRow.getByRole("button", { name: "Delete temporary-delete.txt" }).click(),
   );
-  await expect(page.getByText("temporary-delete.txt")).not.toBeVisible();
+  await expect(temporaryAttachmentRow).not.toBeVisible();
   await capture(page, "07-project-attachments");
 
   // Manual time entry plus the server-side timer lifecycle.
