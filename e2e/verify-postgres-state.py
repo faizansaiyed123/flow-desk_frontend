@@ -71,7 +71,7 @@ try:
         "manual time entry persisted with the requested duration",
         "SELECT EXISTS (SELECT 1 FROM time_entries WHERE tenant_id = %s AND project_id = %s "
         "AND description = %s AND duration_minutes = %s)",
-        (tenant_id, project_id, "Manual verification entry", 45),
+        (tenant_id, project_id, "Manual verification entry edited", 45),
     )
 
     check(
