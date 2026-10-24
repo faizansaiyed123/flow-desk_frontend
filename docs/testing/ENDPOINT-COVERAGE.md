@@ -40,7 +40,7 @@ This file is the endpoint-level companion to [the visual full-stack walkthrough]
 | GET | `/api/v1/tenants/invitations` | List pending invitations |
 | DELETE | `/api/v1/tenants/invitations/{invitation_id}` | Revoke invitation |
 | GET | `/api/v1/tenants/invitations/{token}` | Public invitation preview; invalid/expired token handling |
-| POST | `/api/v1/tenants/invitations/accept` | Accept invitation and create membership; valid flow covered by backend API tests |
+| POST | `/api/v1/tenants/invitations/accept` | Real browser acceptance via generated invitation URL; SQL checks resulting membership and role |
 
 ### User profile — frontend profile flow plus API contract
 
@@ -165,7 +165,7 @@ This file is the endpoint-level companion to [the visual full-stack walkthrough]
 These are not labelled as fully UI-tested features:
 
 1. **Notification state transitions:** the app contains individual-read and mark-all-read controls, but the visual walkthrough's new workspace starts with an empty notification list. The backend tests cover notification creation on task assignment and mark-all-read; individual read should remain marked separately unless a test creates a genuine unread notification and observes its transition.
-2. **Invitation acceptance in browser:** valid invitation acceptance is covered by backend API tests; the visual run exercises the real invalid-token preview/error screen and creation of a pending invitation, not the complete email-driven accept journey.
+2. **Invitation acceptance in browser:** the visual run follows a real generated invitation URL in a second browser context, accepts it, updates the member role, and revokes a separate invitation; external email delivery remains disabled.
 3. **Outbound email delivery:** test configuration disables external email. The recovery and invitation flows verify real API/database behavior, not SMTP delivery.
 4. **External webhook delivery:** backend integration tests verify delivery handling and failure logging using controlled outbound responses. The visual walkthrough verifies persisted webhook configuration and real delivery-history reads, not a real external receiver.
 
