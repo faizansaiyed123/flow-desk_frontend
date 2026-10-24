@@ -528,10 +528,27 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await expect(page.locator('[aria-label="Invoice status: overdue"]')).toBeVisible();
   await capture(page, "14-overdue-invoice");
 
+  // Keep the overdue invoice overdue for PostgreSQL read-back. Test the void
+  // lifecycle independently with a second real draft invoice.
+  await page.locator("nav").getByRole("link", { name: "Invoices" }).click();
+  await page.getByRole("button", { name: /new invoice/i }).click();
+  await page.getByLabel("Client").click();
+  await page.getByRole("option", { name: clientName }).click();
+  await page.getByLabel(/description/i).first().fill("Void walkthrough work");
+  await page.getByLabel(/quantity/i).first().fill("1");
+  await page.getByLabel(/unit price/i).first().fill("15");
+  const voidDraftResponse = await expectSuccessfulApiAction(
+    page,
+    "POST",
+    "/invoices",
+    () => page.getByRole("button", { name: /create invoice/i }).click(),
+  );
+  const voidDraft = await voidDraftResponse.json();
+  expect(voidDraft.status).toBe("draft");
   const voidedInvoice = await expectSuccessfulApiAction(
     page,
     "POST",
-    "/invoices/" + overdueDraft.id + "/void",
+    "/invoices/" + voidDraft.id + "/void",
     () => page.getByRole("button", { name: "Void", exact: true }).click(),
   );
   expect((await voidedInvoice.json()).status).toBe("void");

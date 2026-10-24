@@ -118,6 +118,14 @@ try:
     )
 
     check(
+        "separate draft invoice persisted as void",
+        "SELECT EXISTS (SELECT 1 FROM invoices i JOIN invoice_line_items li ON li.invoice_id = i.id "
+        "WHERE i.tenant_id = %s AND lower(i.status::text) = %s "
+        "AND li.description = %s AND li.amount = %s)",
+        (tenant_id, "void", "Void walkthrough work", 15),
+    )
+
+    check(
         "team invitation persisted as pending",
         "SELECT EXISTS (SELECT 1 FROM invitations WHERE tenant_id = %s AND email = %s "
         "AND lower(status::text) = %s)",

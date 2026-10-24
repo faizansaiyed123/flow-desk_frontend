@@ -170,17 +170,23 @@ Select **Send**. The browser verifies the POST /api/v1/invoices/{invoice_id}/sen
 
 ![Paid invoice after reload](visuals/14-invoice-paid-reloaded.png)
 
+Select **Mark paid**, verify the API response, reload the invoice, and read its status from a fresh GET request. PostgreSQL verification checks the paid invoice row and its stored line item/amount.
+
 ![Deleted draft invoice](visuals/14c-invoice-draft-deleted.png)
 
 A separate disposable draft is deleted through its named **Delete invoice** control. The walkthrough checks the confirmation dialog and real DELETE response, then verifies the invoice disappears from the list and its row is absent from PostgreSQL; the paid invoice remains intact.
-
-Select **Mark paid**, verify the API response, reload the invoice, and read its status from a fresh GET request. PostgreSQL verification checks the paid invoice row and its stored line item/amount.
 
 ### Mark a past-due invoice overdue
 
 ![Overdue invoice](visuals/14-overdue-invoice.png)
 
 The walkthrough creates a second invoice whose due date is seven days in the past, sends it, and uses the newly exposed **Mark overdue** action. The test checks the POST /api/v1/invoices/{invoice_id}/mark-overdue response and confirms PostgreSQL stores the invoice as `overdue` with the expected line item. The UI only exposes this action after an invoice is sent and its due date is before today.
+
+### Void a separate draft invoice
+
+![Voided draft invoice](visuals/14b-invoice-void.png)
+
+The void lifecycle uses a second draft so the earlier past-due invoice remains in the `overdue` state for database verification. The test creates a real draft, selects **Void**, checks the API response and UI badge, and verifies PostgreSQL stores the separate invoice as `void`.
 
 The existing invoicing tests also exercise API validation and lifecycle behavior. The UI E2E suite includes the restriction that a sent invoice cannot be edited.
 
