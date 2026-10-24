@@ -506,7 +506,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     () => inviteePage.getByRole("button", { name: /create account & join/i }).click(),
   );
   expect(await accepted.json()).toHaveProperty("access_token");
-  await expect(inviteePage).toHaveURL(/\\/app\\/dashboard/);
+  await expect(inviteePage).toHaveURL(/dashboard$/);
   await expect(inviteePage.getByText("Overview")).toBeVisible();
   await capture(inviteePage, "17b-invitation-accepted");
   await inviteeContext.close();
