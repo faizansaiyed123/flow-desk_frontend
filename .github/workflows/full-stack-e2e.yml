@@ -139,6 +139,12 @@ jobs:
           CI: "true"
         run: npm run e2e
 
+      - name: Verify walkthrough records directly in PostgreSQL
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/flowdesk_e2e
+        run: python ../e2e/verify-postgres-state.py
+
       - name: Upload test report, screenshots, and backend log
         if: always()
         uses: actions/upload-artifact@v4
