@@ -374,11 +374,12 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   // Global search and notifications use the backend API, not an in-browser fixture.
   await page.keyboard.press("Control+k");
   const searchInput = page.getByPlaceholder(/search clients, projects/i);
-  await searchInput.fill(projectName);
-  const searchResponse = await page.waitForResponse((response) =>
+  const searchResponsePromise = page.waitForResponse((response) =>
     response.request().method() === "GET" &&
     new URL(response.url()).pathname === "/api/v1/search",
   );
+  await searchInput.fill(projectName);
+  const searchResponse = await searchResponsePromise;
   expect(searchResponse.ok()).toBeTruthy();
   await expect(page.getByText(projectName).first()).toBeVisible();
   await capture(page, "18-global-search");
