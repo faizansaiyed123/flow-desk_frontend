@@ -79,6 +79,7 @@ export function ProjectAttachments({ projectId }: { projectId: string }) {
         {attachments?.map((attachment) => (
           <div
             key={attachment.id}
+            data-attachment-id={attachment.id}
             className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-line-700 px-3 py-3"
           >
             <div className="flex min-w-0 items-center gap-3">
