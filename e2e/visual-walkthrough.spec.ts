@@ -469,7 +469,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
 
   await page.getByRole("tab", { name: /api keys/i }).click();
   await page.getByRole("button", { name: /new key/i }).click();
-  await page.getByLabel(/key name/i).fill("Walkthrough automation key");
+  await page.getByLabel("Name").fill("Walkthrough automation key");
   const apiKeyCreation = await expectSuccessfulApiAction(
     page,
     "POST",
