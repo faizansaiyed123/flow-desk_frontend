@@ -40,6 +40,7 @@ async function expectSuccessfulApiAction(
 }
 
 test("captures real FlowDesk browser actions, API responses, and persistent PostgreSQL records", async ({ page }) => {
+  test.setTimeout(240_000);
   // This test is deliberately not wired to MSW and has no route mocks:
   // Vite forwards /api to the actual FastAPI process and PostgreSQL database.
   const observedApiResponses: Array<{ method: string; path: string; status: number }> = [];
