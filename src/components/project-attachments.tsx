@@ -57,7 +57,7 @@ export function ProjectAttachments({ projectId }: { projectId: string }) {
             ref={fileInput}
             type="file"
             aria-label="Upload project attachment"
-            accept=".txt,.pdf,.png,.jpg,.jpeg,.csv,.doc,.docx"
+            accept=".pdf,.png,.jpg,.jpeg,.gif,.docx,.xlsx,.csv,.txt,.zip"
             className="sr-only"
             onChange={(event) => {
               const selected = event.currentTarget.files?.[0];
