@@ -87,14 +87,22 @@ jobs:
           FRONTEND_URL: http://localhost:5173
         run: pytest -q
 
-      - name: Apply migrations to the end-to-end database
+      - name: Seed a legacy manual time entry and apply corrective migration
         working-directory: backend
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/flowdesk_e2e
           SECRET_KEY: ci-only-secret-key-not-for-production
           ENVIRONMENT: test
           DEBUG: "false"
-        run: alembic upgrade head
+        run: |
+          alembic upgrade aef478de41c6
+          python ../e2e/seed-legacy-manual-time-entry.py
+          alembic upgrade head
+
+      - name: Verify historical manual time-entry backfill
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/flowdesk_e2e
+        run: python e2e/verify-legacy-manual-time-entry-migration.py
 
       - name: Start FastAPI against PostgreSQL
         working-directory: backend
@@ -145,6 +153,24 @@ jobs:
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@127.0.0.1:5432/flowdesk_e2e
         run: python ../e2e/verify-postgres-state.py
+
+      - name: Redact invitation/reset tokens from backend log
+        if: always()
+        shell: bash
+        run: |
+          if [ -f "${RUNNER_TEMP}/backend.log" ]; then
+            python - "${RUNNER_TEMP}/backend.log" <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+
+          path = Path(sys.argv[1])
+          log_text = path.read_text(errors="replace")
+          log_text = re.sub(r'(/accept-invite\?token=)[A-Za-z0-9_-]+', r'\1[REDACTED]', log_text)
+          log_text = re.sub(r'(/reset-password\?token=)[A-Za-z0-9_-]+', r'\1[REDACTED]', log_text)
+          path.write_text(log_text)
+          PY
+          fi
 
       - name: Upload test report, screenshots, and backend log
         if: always()
