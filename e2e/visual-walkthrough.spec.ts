@@ -306,7 +306,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     page,
     "POST",
     "/time-entries",
-    () => page.getByRole("button", { name: "Log time" }).click(),
+    () => page.getByRole("dialog").getByRole("button", { name: "Log time", exact: true }).click(),
   );
   const manualEntry = await manualTime.json();
   expect(manualEntry.duration_minutes).toBe(45);
