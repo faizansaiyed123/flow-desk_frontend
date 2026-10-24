@@ -16,6 +16,8 @@ The browser test does not register mocked API responses. Vite forwards /api requ
 
 ## How to read the evidence
 
+For the complete list of registered API methods/paths, backend test modules, frontend workflow mapping, and explicitly unverified integration gaps, see the [endpoint-by-endpoint coverage inventory](ENDPOINT-COVERAGE.md).
+
 Each walkthrough screenshot is a genuine full-page screenshot produced by Playwright while it performs that step. The browser test waits for corresponding HTTP responses and checks their status and important response values. After the UI flow, a separate read-only script queries PostgreSQL for the workspace, client, project, task, time entry, invoice, invitation, API key, and webhook records.
 
 The checklist uses three states:
