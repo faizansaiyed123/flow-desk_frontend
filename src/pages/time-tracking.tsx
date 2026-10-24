@@ -242,7 +242,7 @@ export function TimeTrackingPage() {
             </thead>
             <tbody>
               {entries?.items.map((entry) => (
-                <tr key={entry.id} className="border-b border-line-700 last:border-0">
+                <tr key={entry.id} data-time-entry-id={entry.id} className="border-b border-line-700 last:border-0">
                   <td className="px-4 py-3 text-paper-400">{formatDateTime(entry.started_at)}</td>
                   <td className="px-4 py-3 text-paper-100">{entry.description || "-"}</td>
                   <td className="px-4 py-3 text-right tabular text-paper-400">{formatMinutes(entry.duration_minutes)}</td>
