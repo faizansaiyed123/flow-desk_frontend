@@ -91,12 +91,12 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await page.goto("/accept-invite");
   await expect(page.getByRole("heading", { name: "Invalid invitation" })).toBeVisible();
   await capture(page, "00-missing-invitation-token");
-  await page.goto("/accept-invite?token=invalid-walkthrough-invitation");
   const invalidInvite = page.waitForResponse((response) => {
     const url = new URL(response.url());
     return response.request().method() === "GET" &&
       url.pathname === "/api/v1/tenants/invitations/invalid-walkthrough-invitation";
   });
+  await page.goto("/accept-invite?token=invalid-walkthrough-invitation");
   await expect(page.getByRole("heading", { name: /invitation not found/i })).toBeVisible();
   const invalidInviteResponse = await invalidInvite;
   expect(invalidInviteResponse.status()).toBeGreaterThanOrEqual(400);
