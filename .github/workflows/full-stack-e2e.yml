@@ -137,6 +137,7 @@ jobs:
       - name: Run real full-stack browser tests
         env:
           CI: "true"
+          BACKEND_LOG_PATH: ${{ runner.temp }}/backend.log
         run: npm run e2e
 
       - name: Verify walkthrough records directly in PostgreSQL
