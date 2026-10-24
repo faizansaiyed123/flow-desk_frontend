@@ -585,10 +585,13 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   );
   // Read the response to ensure this was a real generated secret but never log or persist it.
   const apiKeyData = await apiKeyCreation.json();
-  expect(apiKeyData.plaintext_key).toMatch(/^fd_live_/);
+  const apiKeyHasExpectedPrefix = typeof apiKeyData.plaintext_key === "string" && apiKeyData.plaintext_key.startsWith("fd_live_");
   expect(apiKeyData.id).toBeTruthy();
   await expect(page.getByRole("heading", { name: /copy your api key/i })).toBeVisible();
   await page.getByRole("button", { name: "Done" }).click();
+  // Validate only a boolean after dismissing the one-time secret dialog, so any
+  // failure screenshot/report cannot include the generated plaintext key.
+  expect(apiKeyHasExpectedPrefix).toBe(true);
   await expect(page.getByText("Walkthrough automation key", { exact: true })).toBeVisible();
   await capture(page, "18-settings-api-keys");
   const apiKeyRow = page.getByText("Walkthrough automation key", { exact: true }).locator("..").locator("..");
