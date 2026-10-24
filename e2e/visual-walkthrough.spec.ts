@@ -187,17 +187,39 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     async () => {
       await page.getByRole("button", { name: "New project" }).click();
       await page.getByLabel("Name").fill(projectName);
+      await page.getByLabel("Description").fill("Initial project description");
+      await page.getByLabel("Client").click();
+      await page.getByRole("option", { name: clientName }).click();
+      await page.getByRole("combobox", { name: "Billing type" }).click();
+      await page.getByRole("option", { name: "Hourly", exact: true }).click();
+      await page.getByLabel("Hourly rate").fill("120");
       await page.getByRole("button", { name: "Create project" }).click();
     },
   );
   const project = await projectCreated.json();
   expect(project.name).toBe(projectName);
+  expect(project.client_id).toBe(client.id);
+  expect(project.billing_type).toBe("hourly");
+  expect(Number(project.hourly_rate)).toBe(120);
   await expect(page.getByText(projectName)).toBeVisible();
   await capture(page, "04-projects-list");
 
   await page.getByText(projectName).click();
   await expect(page.getByRole("heading", { name: projectName })).toBeVisible();
+  const updatedProjectResponse = await expectSuccessfulApiAction(
+    page,
+    "PATCH",
+    "/projects/" + project.id,
+    async () => {
+      await page.getByRole("button", { name: "Edit", exact: true }).click();
+      const editProjectDialog = page.getByRole("dialog");
+      await editProjectDialog.getByLabel("Description").fill("Updated from the project detail page.");
+      await editProjectDialog.getByRole("button", { name: "Save changes" }).click();
+    },
+  );
+  expect((await updatedProjectResponse.json()).description).toBe("Updated from the project detail page.");
   await expect(page.getByText("Backlog", { exact: true })).toBeVisible();
+  await capture(page, "04b-project-details-updated");
 
   const taskTitle = "Prepare first milestone";
   const taskCreated = await expectSuccessfulApiAction(
@@ -327,6 +349,34 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await expect(page.getByText("Manual verification entry edited")).toBeVisible();
   await capture(page, "08-time-tracking-manual-entry");
 
+  const temporaryTimeResponse = await expectSuccessfulApiAction(
+    page,
+    "POST",
+    "/time-entries",
+    async () => {
+      await page.getByRole("button", { name: /log time manually/i }).click();
+      const temporaryTimeDialog = page.getByRole("dialog");
+      await temporaryTimeDialog.getByText(/select a project/i).click();
+      await page.getByRole("option", { name: projectName }).click();
+      await temporaryTimeDialog.getByLabel("Date & time").fill("2026-10-24T09:00");
+      await temporaryTimeDialog.getByLabel("Minutes").fill("15");
+      await temporaryTimeDialog.getByLabel("Description").fill("Temporary time entry to delete");
+      await temporaryTimeDialog.getByRole("button", { name: "Log time", exact: true }).click();
+    },
+  );
+  const temporaryTimeEntry = await temporaryTimeResponse.json();
+  expect(temporaryTimeEntry.duration_minutes).toBe(15);
+  const temporaryTimeRow = page.locator('[data-time-entry-id="' + temporaryTimeEntry.id + '"]');
+  await expect(temporaryTimeRow.getByText("Temporary time entry to delete", { exact: true })).toBeVisible();
+  await expectSuccessfulApiAction(
+    page,
+    "DELETE",
+    "/time-entries/" + temporaryTimeEntry.id,
+    () => temporaryTimeRow.getByRole("button", { name: "Delete time entry Temporary time entry to delete" }).click(),
+  );
+  await expect(temporaryTimeRow).not.toBeVisible();
+  await capture(page, "08b-time-entry-deleted");
+
   await page.getByText("Select a project to start timing").click();
   await page.getByRole("option", { name: projectName }).click();
   await expectSuccessfulApiAction(
@@ -349,8 +399,40 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await expect(page.getByText("Manual verification entry edited", { exact: true })).toBeVisible();
   await capture(page, "10-time-tracking-stopped-reloaded");
 
+  // Generate an invoice from completed billable time using the project billing configuration.
+  await page.locator("nav").getByRole("link", { name: "Projects" }).click();
+  await page.getByText(projectName).click();
+  await expect(page.getByRole("button", { name: /invoice unbilled time/i })).toBeEnabled();
+  const generatedTimeRead = page.waitForResponse((response) =>
+    response.request().method() === "GET" &&
+    new URL(response.url()).pathname === "/api/v1/time-entries" &&
+    new URL(response.url()).searchParams.get("project_id") === project.id,
+  );
+  const generatedFromTimeResponse = await expectSuccessfulApiAction(
+    page,
+    "POST",
+    "/invoices/generate-from-time",
+    () => page.getByRole("button", { name: /invoice unbilled time/i }).click(),
+  );
+  const generatedTimeInvoice = await generatedFromTimeResponse.json();
+  expect(generatedTimeInvoice.status).toBe("draft");
+  expect(generatedTimeInvoice.project_id).toBe(project.id);
+  expect(generatedTimeInvoice.line_items.length).toBeGreaterThan(0);
+  expect(Number(generatedTimeInvoice.line_items[0].quantity)).toBeGreaterThan(0);
+  expect(Number(generatedTimeInvoice.total)).toBeGreaterThan(0);
+  const invoicedTimeReadResponse = await generatedTimeRead;
+  expect(invoicedTimeReadResponse.ok()).toBeTruthy();
+  const timeEntriesAfterInvoicing = await invoicedTimeReadResponse.json();
+  expect(timeEntriesAfterInvoicing.items.filter((entry: { is_invoiced: boolean }) => entry.is_invoiced).length).toBeGreaterThan(0);
+  await page.locator("nav").getByRole("link", { name: "Invoices" }).click();
+  await page.getByText(generatedTimeInvoice.invoice_number, { exact: true }).click();
+  await expect(page.getByRole("heading", { name: generatedTimeInvoice.invoice_number })).toBeVisible();
+  await capture(page, "10b-invoice-from-time-generated");
+
+  // A second browser/API-generated invoice will remain draft; the following manual invoice
+  // covers the sent/paid lifecycle separately.
   // Invoice lifecycle: draft → sent → paid, followed by a fresh server read.
-  await page.getByRole("link", { name: "Invoices" }).click();
+  await page.locator("nav").getByRole("link", { name: "Invoices" }).click();
   await page.getByRole("button", { name: /new invoice/i }).click();
   await page.getByLabel("Client").click();
   await page.getByRole("option", { name: clientName }).click();
