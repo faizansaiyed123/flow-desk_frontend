@@ -125,7 +125,8 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "/auth/register",
     () => page.getByRole("button", { name: "Create workspace" }).click(),
   );
-  expect(await registration.json()).toHaveProperty("access_token");
+  const registeredAccount = await registration.json();
+  expect(registeredAccount).toHaveProperty("access_token");
   await expect(page).toHaveURL(/\/app\/dashboard/);
   await expect(page.getByText("Overview")).toBeVisible();
   await capture(page, "01-dashboard");
@@ -521,7 +522,6 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await expect(inviteePage).toHaveURL(/dashboard$/);
   await expect(inviteePage.getByText("Overview")).toBeVisible();
   await capture(inviteePage, "17b-invitation-accepted");
-  await inviteeContext.close();
 
   // Reload the owner workspace so the member list is fetched afresh from the API.
   await page.reload();
@@ -537,6 +537,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     member.user.email === acceptedInviteEmail
   );
   if (!acceptedMember) throw new Error("Accepted invitation did not create a workspace membership.");
+  const invitedUserId = acceptedMember.user.id;
   const acceptedMemberRow = page.getByText("FlowDesk Invited Member").locator("..").locator("..");
   const memberRoleUpdate = page.waitForResponse((response) =>
     response.request().method() === "PATCH" &&
@@ -654,11 +655,103 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   expect(activityItems.some((item: { entity_label?: string }) => item.entity_label === "walkthrough-evidence.txt")).toBeTruthy();
   await capture(page, "21-activity-feed");
 
-  await page.locator("button:has(svg.lucide-bell)").click();
-  await expect(page.getByText("Notifications")).toBeVisible();
-  await expect.poll(() => observedApiResponses.some((r) => r.path === "/api/v1/notifications")).toBeTruthy();
-  await expect.poll(() => observedApiResponses.some((r) => r.path === "/api/v1/notifications/unread-count")).toBeTruthy();
-  await capture(page, "22-notifications");
+  // Assign two real tasks to the invited member through the task-detail UI. The backend
+  // creates notification rows; no notification records or API responses are mocked.
+  await page.locator("nav").getByRole("link", { name: "Projects" }).click();
+  await page.getByText(projectName).click();
+  await expect(page.getByRole("heading", { name: projectName })).toBeVisible();
+
+  const assignTaskToInvitee = async (title: string) => {
+    const createdResponse = await expectSuccessfulApiAction(
+      page,
+      "POST",
+      "/tasks",
+      async () => {
+        const backlogColumn = page.locator("text=Backlog").locator("..").locator("..");
+        await backlogColumn.getByRole("button", { name: /add task/i }).click();
+        await page.getByPlaceholder("Task title...").fill(title);
+        await page.getByRole("button", { name: "Create task" }).click();
+      },
+    );
+    const createdTask = await createdResponse.json();
+    expect(createdTask.title).toBe(title);
+    await page.getByText(title).first().click();
+    const assignmentResponse = await expectSuccessfulApiAction(
+      page,
+      "PATCH",
+      "/tasks/" + createdTask.id,
+      async () => {
+        await page.getByRole("combobox", { name: "Assignee" }).click();
+        await page.getByRole("option", { name: /FlowDesk Invited Member/ }).click();
+      },
+    );
+    expect((await assignmentResponse.json()).assignee_id).toBe(invitedUserId);
+    await page.keyboard.press("Escape");
+    return createdTask;
+  };
+
+  const individualReadTask = await assignTaskToInvitee("Notification individual read");
+  const markAllReadTask = await assignTaskToInvitee("Notification bulk read");
+  await capture(page, "06b-task-assigned");
+
+  // Reload the invitee session so its notification queries read the task-assignment rows
+  // just created in PostgreSQL by the owner session.
+  const inviteeNotificationListPromise = inviteePage.waitForResponse((response) =>
+    response.request().method() === "GET" &&
+    new URL(response.url()).pathname === "/api/v1/notifications",
+  );
+  await inviteePage.reload();
+  const inviteeNotificationList = await inviteeNotificationListPromise;
+  expect(inviteeNotificationList.ok()).toBeTruthy();
+  const inviteeNotificationData = await inviteeNotificationList.json();
+  const individualNotification = inviteeNotificationData.items.find(
+    (item: { id: string; title: string }) => item.title.includes(individualReadTask.title),
+  );
+  const markAllNotification = inviteeNotificationData.items.find(
+    (item: { id: string; title: string }) => item.title.includes(markAllReadTask.title),
+  );
+  if (!individualNotification || !markAllNotification) {
+    throw new Error("Task assignment did not create both real invitee notifications.");
+  }
+
+  await inviteePage.locator("button:has(svg.lucide-bell)").click();
+  await expect(inviteePage.getByText("Notifications")).toBeVisible();
+  await expect(inviteePage.getByText(individualNotification.title, { exact: true })).toBeVisible();
+  await expect(inviteePage.getByText(markAllNotification.title, { exact: true })).toBeVisible();
+  await capture(inviteePage, "22-notifications");
+
+  const individualRead = await expectSuccessfulApiAction(
+    inviteePage,
+    "POST",
+    "/notifications/" + individualNotification.id + "/read",
+    () => inviteePage.getByText(individualNotification.title, { exact: true }).click(),
+  );
+  expect((await individualRead.json()).is_read).toBe(true);
+  await expect(inviteePage).toHaveURL(new RegExp("/app/projects/" + project.id + "$"));
+  await expect(inviteePage.getByRole("heading", { name: projectName })).toBeVisible();
+
+  await inviteePage.locator("button:has(svg.lucide-bell)").click();
+  await expect(inviteePage.getByRole("button", { name: "Mark all read" })).toBeVisible();
+  const allRead = await expectSuccessfulApiAction(
+    inviteePage,
+    "POST",
+    "/notifications/read-all",
+    () => inviteePage.getByRole("button", { name: "Mark all read" }).click(),
+  );
+  expect((await allRead.json()).message).toMatch(/marked as read/i);
+  await expect(inviteePage.getByRole("button", { name: "Mark all read" })).toHaveCount(0);
+  const finalNotificationState = await inviteePage.request.get("http://localhost:5173/api/v1/notifications", {
+    headers: { Authorization: "Bearer " + (await inviteePage.evaluate(() => {
+      const raw = localStorage.getItem("flowdesk-auth");
+      return raw ? JSON.parse(raw).state?.accessToken ?? "" : "";
+    })) },
+  });
+  expect(finalNotificationState.ok()).toBeTruthy();
+  const finalNotificationItems = (await finalNotificationState.json()).items;
+  expect(finalNotificationItems.find((item: { id: string }) => item.id === individualNotification.id)?.is_read).toBe(true);
+  expect(finalNotificationItems.find((item: { id: string }) => item.id === markAllNotification.id)?.is_read).toBe(true);
+  await capture(inviteePage, "23-notifications-read-state");
+  await inviteeContext.close();
 
   // Sanity-check the browser actually crossed the frontend/API boundary for core workflows.
   for (const expectedPath of [

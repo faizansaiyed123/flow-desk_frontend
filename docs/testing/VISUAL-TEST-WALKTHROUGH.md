@@ -242,11 +242,17 @@ Open search with **Ctrl+K** and search for the project created earlier in the ru
 
 The new Activity navigation item calls GET /api/v1/activity and renders recent workspace-scoped changes. The walkthrough confirms that the upload action appears in the returned activity collection; SQL independently verifies the related activity log entry.
 
-## 8. Notifications
+## 8. Notifications and read-state transitions
 
-![Notification menu](visuals/22-notifications.png)
+![Real task-assignment notifications](visuals/22-notifications.png)
 
-Open the notification menu. The shell reads the notification list and unread count from the backend. A new workspace may have no notifications, so an empty message is expected; it must not be represented as test-seeded notification data.
+The walkthrough assigns two tasks to the invited workspace member from the task-detail Assignee control. Each assignment invokes the real task PATCH endpoint and persists a notification for that member. The test opens the member's authenticated browser context and reads the entries returned by `GET /api/v1/notifications`; these are not fixture rows.
+
+Click the first notification. The browser verifies the real `POST /api/v1/notifications/{notification_id}/read` response reports `is_read: true` and that its link opens the registered project page.
+
+![Both notification read transitions completed](visuals/23-notifications-read-state.png)
+
+Open the notification menu again and choose **Mark all read**. The test asserts `POST /api/v1/notifications/read-all` succeeds, the unread indicator disappears, and both task-assignment notifications are marked read in a fresh API read. The separate SQL check verifies the two notification rows and their final `is_read` values directly in PostgreSQL.
 
 ## 8. Feature and regression checklist
 
@@ -266,7 +272,7 @@ The workflow runs the backend API suite, frontend unit tests, frontend lint and 
 | API-key creation/revocation and secret handling | Browser E2E + API-key API tests + SQL hash check | Pending CI run |
 | Webhook configuration and delivery logging | Browser configuration test + webhook API tests + SQL check | Pending CI run |
 | Global search and tenant isolation | Browser E2E + backend search/activity tests | Pending CI run |
-| Notifications and unread count | Browser observation + backend notification tests | Pending CI run |
+| Notifications, individual read and mark-all-read | Real task assignments + browser UI actions + notification API responses + PostgreSQL `is_read` read-back | Pending CI run |
 | Attachments: upload, list, download, delete, extension/parent validation | Real project UI + API response checks + PostgreSQL and local disk checks | Pending CI run |
 | Profile updates and activity history | Real profile PATCH + SQL user check; activity GET + audit row check | Pending CI run |
 | Webhook activation and delivery history | Real PATCH + GET requests; final active state verified in PostgreSQL | Pending CI run |

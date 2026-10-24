@@ -68,6 +68,20 @@ try:
     )
 
     check(
+        "both notification tasks persisted with the invited member assigned",
+        "SELECT COUNT(*) = 2 FROM tasks WHERE tenant_id = %s "
+        "AND title IN (%s, %s) AND assignee_id IS NOT NULL",
+        (tenant_id, "Notification individual read", "Notification bulk read"),
+    )
+
+    check(
+        "individual and mark-all-read notification state persisted",
+        "SELECT COUNT(*) = 2 AND bool_and(is_read) FROM notifications WHERE tenant_id = %s "
+        "AND (title ILIKE %s OR title ILIKE %s)",
+        (tenant_id, "%Notification individual read%", "%Notification bulk read%"),
+    )
+
+    check(
         "manual time entry persisted with the requested duration",
         "SELECT EXISTS (SELECT 1 FROM time_entries WHERE tenant_id = %s AND project_id = %s "
         "AND description = %s AND duration_minutes = %s AND ended_at IS NOT NULL)",

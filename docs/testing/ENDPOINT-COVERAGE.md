@@ -77,7 +77,7 @@ This file is the endpoint-level companion to [the visual full-stack walkthrough]
 | GET | `/api/v1/tasks` | Task list/search/status filters |
 | GET | `/api/v1/tasks/board/{project_id}` | Load grouped board and ordered columns |
 | GET | `/api/v1/tasks/{task_id}` | Task detail |
-| PATCH | `/api/v1/tasks/{task_id}` | Edit title/status/description/due date and other supported fields |
+| PATCH | `/api/v1/tasks/{task_id}` | Edit task fields and assign a real workspace member; assignment triggers a notification with a valid `/app/projects/{project_id}` link |
 | PATCH | `/api/v1/tasks/{task_id}/move` | Drag/drop status and position updates |
 | DELETE | `/api/v1/tasks/{task_id}` | Delete task and comments |
 | POST | `/api/v1/tasks/{task_id}/comments` | Add comment to task |
@@ -89,8 +89,8 @@ This file is the endpoint-level companion to [the visual full-stack walkthrough]
 |---|---|---|
 | GET | `/api/v1/notifications` | Notification menu and empty/non-empty list |
 | GET | `/api/v1/notifications/unread-count` | Header unread indicator |
-| POST | `/api/v1/notifications/{notification_id}/read` | Select a notification to mark it read; endpoint exists in the UI path |
-| POST | `/api/v1/notifications/read-all` | “Mark all read” control when unread notifications exist |
+| POST | `/api/v1/notifications/{notification_id}/read` | Browser clicks a real task-assignment notification, checks the PATCH/POST response and valid project navigation, and verifies `is_read` in PostgreSQL |
+| POST | `/api/v1/notifications/read-all` | Browser marks a second real task-assignment notification read; SQL confirms both individual and bulk transitions persisted |
 
 ### Time tracking — `tests/test_time_entries.py`
 
@@ -160,13 +160,9 @@ This file is the endpoint-level companion to [the visual full-stack walkthrough]
 |---|---|---|
 | GET | `/health` | CI readiness probe confirms FastAPI started before browser tests |
 
-## Coverage gaps explicitly retained
+## Coverage boundaries explicitly retained
 
-These are not labelled as fully UI-tested features:
+1. **Outbound email delivery:** CI disables external SMTP. Password recovery and invitation journeys exercise real backend API/database behavior and invitation acceptance in a second browser session, but do not claim delivery to an external mailbox.
+2. **External webhook delivery:** backend integration tests cover delivery handling and failure logging with controlled outbound responses. The browser walkthrough verifies persisted webhook configuration and the real delivery-history API, not delivery to a live third-party receiver.
 
-1. **Notification state transitions:** the app contains individual-read and mark-all-read controls, but the visual walkthrough's new workspace starts with an empty notification list. The backend tests cover notification creation on task assignment and mark-all-read; individual read should remain marked separately unless a test creates a genuine unread notification and observes its transition.
-2. **Invitation acceptance in browser:** the visual run follows a real generated invitation URL in a second browser context, accepts it, updates the member role, and revokes a separate invitation; external email delivery remains disabled.
-3. **Outbound email delivery:** test configuration disables external email. The recovery and invitation flows verify real API/database behavior, not SMTP delivery.
-4. **External webhook delivery:** backend integration tests verify delivery handling and failure logging using controlled outbound responses. The visual walkthrough verifies persisted webhook configuration and real delivery-history reads, not a real external receiver.
-
-The project should not be described as “all endpoints individually passed” until a green run and the relevant test coverage are confirmed. These gap notes are intentional to prevent screenshots or route registration from being mistaken for proof.
+These boundaries require externally configured services or credentials; they are not simulated as successful. The route inventory and test output should be used together: a registered route alone is not proof of behavior.

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { useTask, useUpdateTask, useDeleteTask, useTaskComments, useAddComment } from "@/hooks/use-tasks";
+import { useTeamMembers } from "@/hooks/use-team";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ export function TaskDetailDialog({
   taskId, projectId, open, onOpenChange,
 }: { taskId: string; projectId: string; open: boolean; onOpenChange: (open: boolean) => void }) {
   const { data: task } = useTask(taskId);
+  const { data: teamMembers } = useTeamMembers();
   const updateTask = useUpdateTask(projectId);
   const deleteTask = useDeleteTask(projectId);
   const { data: comments } = useTaskComments(taskId);
@@ -63,6 +65,26 @@ export function TaskDetailDialog({
                   <SelectItem value="medium">Medium</SelectItem>
                   <SelectItem value="high">High</SelectItem>
                   <SelectItem value="urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="task-assignee">Assignee</Label>
+              <Select
+                value={task.assignee_id ?? "unassigned"}
+                onValueChange={(value) => updateTask.mutate({
+                  id: task.id,
+                  data: { assignee_id: value === "unassigned" ? null : value },
+                })}
+              >
+                <SelectTrigger id="task-assignee" aria-label="Assignee"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {teamMembers?.map((member) => (
+                    <SelectItem key={member.user.id} value={member.user.id}>
+                      {member.user.full_name} ({member.user.email})
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
