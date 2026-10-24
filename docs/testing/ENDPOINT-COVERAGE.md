@@ -101,7 +101,7 @@ This file is the endpoint-level companion to [the visual full-stack walkthrough]
 | POST | `/api/v1/time-entries/timer/stop` | Stop timer and persist end timestamp |
 | GET | `/api/v1/time-entries/timer/running` | Restore running timer after navigation/reload |
 | GET | `/api/v1/time-entries` | List/filter time entries |
-| PATCH | `/api/v1/time-entries/{entry_id}` | Backend supports editing and tests duration recomputation; current frontend has no time-entry edit control (integration gap) |
+| PATCH | `/api/v1/time-entries/{entry_id}` | Edit dialog for description/start/duration/billable state; walkthrough checks real PATCH response and PostgreSQL read-back |
 | DELETE | `/api/v1/time-entries/{entry_id}` | Delete time entry from Time page |
 
 ### Invoicing — `tests/test_invoices.py`
@@ -116,7 +116,7 @@ This file is the endpoint-level companion to [the visual full-stack walkthrough]
 | POST | `/api/v1/invoices/{invoice_id}/send` | Draft → sent lifecycle |
 | POST | `/api/v1/invoices/{invoice_id}/mark-paid` | Sent/overdue → paid lifecycle |
 | POST | `/api/v1/invoices/{invoice_id}/void` | Void invoice |
-| POST | `/api/v1/invoices/{invoice_id}/mark-overdue` | Backend lifecycle endpoint; current detail UI does not expose a Mark overdue action (integration gap) |
+| POST | `/api/v1/invoices/{invoice_id}/mark-overdue` | Visible for sent invoices with a past due date; walkthrough exercises sent → overdue and SQL verifies the stored state |
 | DELETE | `/api/v1/invoices/{invoice_id}` | Draft invoice delete |
 
 ### Webhooks — `tests/test_webhooks.py`
@@ -164,11 +164,9 @@ This file is the endpoint-level companion to [the visual full-stack walkthrough]
 
 These are not labelled as fully UI-tested features:
 
-1. **Time-entry editing:** backend PATCH endpoint and API tests exist, but the Time page lacks a visible edit form/control.
-2. **Mark invoice overdue:** backend endpoint and a hook exist, but the invoice detail page does not currently expose the action.
-3. **Notification state transitions:** the app contains individual-read and mark-all-read controls, but the visual walkthrough's new workspace starts with an empty notification list. The backend tests cover notification creation on task assignment and mark-all-read; individual read should remain marked separately unless a test creates a genuine unread notification and observes its transition.
-4. **Invitation acceptance in browser:** valid invitation acceptance is covered by backend API tests; the visual run exercises the real invalid-token preview/error screen and creation of a pending invitation, not the complete email-driven accept journey.
-5. **Outbound email delivery:** test configuration disables external email. The recovery and invitation flows verify real API/database behavior, not SMTP delivery.
-6. **External webhook delivery:** backend integration tests verify delivery handling and failure logging using controlled outbound responses. The visual walkthrough verifies persisted webhook configuration and real delivery-history reads, not a real external receiver.
+1. **Notification state transitions:** the app contains individual-read and mark-all-read controls, but the visual walkthrough's new workspace starts with an empty notification list. The backend tests cover notification creation on task assignment and mark-all-read; individual read should remain marked separately unless a test creates a genuine unread notification and observes its transition.
+2. **Invitation acceptance in browser:** valid invitation acceptance is covered by backend API tests; the visual run exercises the real invalid-token preview/error screen and creation of a pending invitation, not the complete email-driven accept journey.
+3. **Outbound email delivery:** test configuration disables external email. The recovery and invitation flows verify real API/database behavior, not SMTP delivery.
+4. **External webhook delivery:** backend integration tests verify delivery handling and failure logging using controlled outbound responses. The visual walkthrough verifies persisted webhook configuration and real delivery-history reads, not a real external receiver.
 
 The project should not be described as “all endpoints individually passed” until a green run and the relevant test coverage are confirmed. These gap notes are intentional to prevent screenshots or route registration from being mistaken for proof.
