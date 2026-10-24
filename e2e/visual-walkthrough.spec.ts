@@ -611,7 +611,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await page.getByRole("button", { name: /new webhook/i }).click();
   const webhookUrl = "https://hooks.example.com/flowdesk-walkthrough";
   await page.getByLabel("Target URL").fill(webhookUrl);
-  await page.getByRole("button", { name: "task.created", exact: true }).click();
+  await page.getByRole("button", { name: "invoice.paid", exact: true }).click();
   const webhook = await expectSuccessfulApiAction(
     page,
     "POST",
