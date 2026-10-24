@@ -528,6 +528,16 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await expect(page.locator('[aria-label="Invoice status: overdue"]')).toBeVisible();
   await capture(page, "14-overdue-invoice");
 
+  const voidedInvoice = await expectSuccessfulApiAction(
+    page,
+    "POST",
+    "/invoices/" + overdueDraft.id + "/void",
+    () => page.getByRole("button", { name: "Void", exact: true }).click(),
+  );
+  expect((await voidedInvoice.json()).status).toBe("void");
+  await expect(page.locator('[aria-label="Invoice status: void"]')).toBeVisible();
+  await capture(page, "14b-invoice-void");
+
   // Settings: invitation, one-time API key, webhook. Never screenshot secrets.
   await page.getByRole("link", { name: "Settings" }).click();
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
@@ -544,6 +554,17 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await expect(page.getByLabel("Full name")).toHaveValue("FlowDesk Walkthrough User Updated");
   await capture(page, "15-settings-profile");
   await page.getByRole("tab", { name: "Workspace" }).click();
+  const workspaceUpdate = await expectSuccessfulApiAction(
+    page,
+    "PATCH",
+    "/tenants/current",
+    async () => {
+      await page.getByLabel("Workspace name").fill("FlowDesk Visual Walkthrough Updated");
+      await page.getByRole("button", { name: "Save", exact: true }).click();
+    },
+  );
+  expect((await workspaceUpdate.json()).name).toBe("FlowDesk Visual Walkthrough Updated");
+  await expect(page.getByLabel("Workspace name")).toHaveValue("FlowDesk Visual Walkthrough Updated");
   await capture(page, "16-settings-workspace");
 
   await page.getByRole("tab", { name: "Team" }).click();
@@ -885,6 +906,147 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   expect(finalNotificationItems.find((item: { id: string }) => item.id === markAllNotification.id)?.is_read).toBe(true);
   await capture(inviteePage, "23-notifications-read-state");
   await inviteeContext.close();
+
+  // Project CRUD: create and edit a disposable project, then delete it through the confirmation UI.
+  await page.locator("nav").getByRole("link", { name: "Projects" }).click();
+  const disposableProjectName = "Project lifecycle cleanup";
+  const disposableProjectResponse = await expectSuccessfulApiAction(
+    page,
+    "POST",
+    "/projects",
+    async () => {
+      await page.getByRole("button", { name: "New project" }).click();
+      await page.getByLabel("Name").fill(disposableProjectName);
+      await page.getByLabel("Description").fill("Initial disposable project description");
+      await page.getByLabel("Billing type").click();
+      await page.getByRole("option", { name: "Non-billable", exact: true }).click();
+      await page.getByRole("button", { name: "Create project" }).click();
+    },
+  );
+  const disposableProject = await disposableProjectResponse.json();
+  expect(disposableProject.name).toBe(disposableProjectName);
+  expect(disposableProject.billing_type).toBe("non_billable");
+  await page.getByText(disposableProjectName, { exact: true }).click();
+  await expect(page.getByRole("heading", { name: disposableProjectName })).toBeVisible();
+  const disposableProjectUpdate = await expectSuccessfulApiAction(
+    page,
+    "PATCH",
+    "/projects/" + disposableProject.id,
+    async () => {
+      await page.getByRole("button", { name: "Edit", exact: true }).click();
+      const editDialog = page.getByRole("dialog");
+      await editDialog.getByLabel("Description").fill("Updated disposable project description");
+      await capture(page, "04c-project-edit-dialog");
+      await editDialog.getByRole("button", { name: "Save changes" }).click();
+    },
+  );
+  expect((await disposableProjectUpdate.json()).description).toBe("Updated disposable project description");
+  const deleteProjectResponse = await expectSuccessfulApiAction(
+    page,
+    "DELETE",
+    "/projects/" + disposableProject.id,
+    async () => {
+      await page.getByRole("button", { name: "Delete project", exact: true }).click();
+      const confirmation = page.getByRole("dialog");
+      await expect(confirmation.getByText("Delete this project?")).toBeVisible();
+      await confirmation.getByRole("button", { name: "Delete project", exact: true }).click();
+    },
+  );
+  expect((await deleteProjectResponse.json()).message).toMatch(/deleted/i);
+  await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible();
+  await expect(page.getByText(disposableProjectName, { exact: true })).toHaveCount(0);
+  await capture(page, "04d-project-deleted");
+
+  // Draft-invoice deletion is a separate lifecycle action; the main billing and paid
+  // invoice records remain available for the PostgreSQL verification below.
+  const disposableDraftInvoiceResponse = await expectSuccessfulApiAction(
+    page,
+    "POST",
+    "/invoices",
+    async () => {
+      await page.locator("nav").getByRole("link", { name: "Invoices" }).click();
+      await page.getByRole("button", { name: /new invoice/i }).click();
+      await page.getByLabel("Client").click();
+      await page.getByRole("option", { name: clientName }).click();
+      await page.getByLabel(/description/i).first().fill("Disposable draft invoice");
+      await page.getByLabel(/quantity/i).first().fill("1");
+      await page.getByLabel(/unit price/i).first().fill("10");
+      await page.getByRole("button", { name: /create invoice/i }).click();
+    },
+  );
+  const disposableDraftInvoice = await disposableDraftInvoiceResponse.json();
+  expect(disposableDraftInvoice.status).toBe("draft");
+  const deletedDraftInvoice = await expectSuccessfulApiAction(
+    page,
+    "DELETE",
+    "/invoices/" + disposableDraftInvoice.id,
+    async () => {
+      await page.locator("button:has(svg.lucide-trash2)").click();
+      const confirmation = page.getByRole("dialog");
+      await expect(confirmation.getByText("Delete this invoice?")).toBeVisible();
+      await confirmation.getByRole("button", { name: "Delete invoice", exact: true }).click();
+    },
+  );
+  expect((await deletedDraftInvoice.json()).message).toMatch(/deleted/i);
+  await expect(page.getByText(disposableDraftInvoice.invoice_number, { exact: true })).toHaveCount(0);
+  await capture(page, "14c-invoice-draft-deleted");
+
+  // Full password-recovery path: use the backend-generated email token in an untraced
+  // browser context, reset the password, then prove the new password can authenticate.
+  const passwordResetContext = await browser.newContext();
+  const passwordResetPage = await passwordResetContext.newPage();
+  await passwordResetPage.goto("http://localhost:5173/forgot-password");
+  const passwordResetRequest = await expectSuccessfulApiAction(
+    passwordResetPage,
+    "POST",
+    "/auth/forgot-password",
+    async () => {
+      await passwordResetPage.getByLabel("Email").fill(accountEmail);
+      await passwordResetPage.getByRole("button", { name: "Send reset link" }).click();
+    },
+  );
+  expect((await passwordResetRequest.json()).message).toMatch(/reset link/i);
+  await expect(passwordResetPage.getByRole("heading", { name: "Check your email" })).toBeVisible();
+  const readPasswordResetToken = async () => {
+    const logText = await readFile(backendLogPath!, "utf8");
+    const emailOffset = logText.lastIndexOf("to=" + accountEmail);
+    if (emailOffset < 0) return "";
+    const resetMail = logText.slice(emailOffset);
+    return resetMail.match(/Reset your password: http:\/\/localhost:5173\/reset-password\?token=([A-Za-z0-9_-]+)/)?.[1] ?? "";
+  };
+  await expect.poll(readPasswordResetToken, { timeout: 15_000 }).not.toBe("");
+  const passwordResetToken = await readPasswordResetToken();
+  await passwordResetPage.goto("http://localhost:5173/reset-password?token=" + encodeURIComponent(passwordResetToken));
+  await expect(passwordResetPage.getByRole("heading", { name: "Set a new password" })).toBeVisible();
+  await capture(passwordResetPage, "24-valid-reset-token");
+  const resetPassword = "Flowdesk-reset-password-456";
+  const passwordResetResponse = await expectSuccessfulApiAction(
+    passwordResetPage,
+    "POST",
+    "/auth/reset-password",
+    async () => {
+      await passwordResetPage.getByLabel("New password").fill(resetPassword);
+      await passwordResetPage.getByRole("button", { name: "Reset password" }).click();
+    },
+  );
+  expect((await passwordResetResponse.json()).message).toMatch(/reset successfully/i);
+  await expect(passwordResetPage).toHaveURL(/\/login$/);
+  await capture(passwordResetPage, "25-password-reset-success");
+  const loginAfterReset = await expectSuccessfulApiAction(
+    passwordResetPage,
+    "POST",
+    "/auth/login",
+    async () => {
+      await passwordResetPage.getByLabel("Email").fill(accountEmail);
+      await passwordResetPage.getByLabel("Password").fill(resetPassword);
+      await passwordResetPage.getByRole("button", { name: "Log in" }).click();
+    },
+  );
+  expect(await loginAfterReset.json()).toHaveProperty("access_token");
+  await expect(passwordResetPage).toHaveURL(/\/app\/dashboard$/);
+  await expect(passwordResetPage.getByText("Overview")).toBeVisible();
+  await capture(passwordResetPage, "26-login-after-reset");
+  await passwordResetContext.close();
 
   // Sanity-check the browser actually crossed the frontend/API boundary for core workflows.
   for (const expectedPath of [
