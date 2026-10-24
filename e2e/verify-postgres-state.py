@@ -4,6 +4,7 @@ Run after the visual Playwright test, against the dedicated flowdesk_e2e
 database. This is intentionally a read-only check; it never edits the data.
 """
 import os
+from pathlib import Path
 
 import psycopg2
 
@@ -33,6 +34,13 @@ try:
         raise AssertionError("The walkthrough workspace was not found in PostgreSQL.")
     tenant_id = tenant_row[0]
     print("PASS PostgreSQL: registered workspace persisted")
+
+    check(
+        "profile change persisted to the member user row",
+        "SELECT EXISTS (SELECT 1 FROM users u JOIN memberships m ON m.user_id = u.id "
+        "WHERE m.tenant_id = %s AND u.full_name = %s)",
+        (tenant_id, "FlowDesk Walkthrough User Updated"),
+    )
 
     check(
         "client and edited notes persisted",
@@ -67,11 +75,11 @@ try:
     )
 
     check(
-        "invoice and total persisted in paid status",
+        "invoice, edited notes, total and paid status persisted",
         "SELECT EXISTS (SELECT 1 FROM invoices i JOIN clients c ON c.id = i.client_id "
         "WHERE i.tenant_id = %s AND c.name = %s AND lower(i.status::text) = %s "
-        "AND i.total = %s)",
-        (tenant_id, "Walkthrough Client", "paid", 100),
+        "AND i.total = %s AND i.notes = %s)",
+        (tenant_id, "Walkthrough Client", "paid", 100, "Edited in the full-stack walkthrough."),
     )
 
     check(
@@ -96,10 +104,47 @@ try:
     )
 
     check(
-        "webhook configuration persisted",
+        "webhook configuration persisted active after pause/reactivate",
         "SELECT EXISTS (SELECT 1 FROM webhooks WHERE tenant_id = %s AND target_url = %s "
         "AND is_active = TRUE)",
         (tenant_id, "https://hooks.example.com/flowdesk-walkthrough"),
+    )
+
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT storage_path, size_bytes, content_type FROM attachments "
+            "WHERE tenant_id = %s AND project_id = %s AND file_name = %s LIMIT 1",
+            (tenant_id, project_id, "walkthrough-evidence.txt"),
+        )
+        attachment = cursor.fetchone()
+    if attachment is None:
+        raise AssertionError("PostgreSQL verification failed: attachment record persisted")
+    storage_path, size_bytes, content_type = attachment
+    expected_content = (
+        b"FlowDesk real full-stack walkthrough attachment. "
+        b"PostgreSQL and disk storage are verified."
+    )
+    stored_file = Path(storage_path)
+    if not stored_file.is_file():
+        raise AssertionError(f"Uploaded file is missing from storage: {stored_file}")
+    if stored_file.read_bytes() != expected_content:
+        raise AssertionError("Downloaded file bytes differ from the original upload.")
+    if size_bytes != len(expected_content) or content_type != "text/plain":
+        raise AssertionError("Stored attachment size or content type is incorrect.")
+    print("PASS PostgreSQL + disk: attachment row and original file bytes persisted")
+
+    check(
+        "temporary attachment row was removed after deletion",
+        "SELECT NOT EXISTS (SELECT 1 FROM attachments WHERE tenant_id = %s "
+        "AND project_id = %s AND file_name = %s)",
+        (tenant_id, project_id, "temporary-delete.txt"),
+    )
+
+    check(
+        "file upload was recorded in workspace activity history",
+        "SELECT EXISTS (SELECT 1 FROM activity_logs WHERE tenant_id = %s "
+        "AND entity_label = %s AND action = %s)",
+        (tenant_id, "walkthrough-evidence.txt", "attachment.uploaded"),
     )
 
     print("PASS: all browser-walkthrough records verified in PostgreSQL.")
