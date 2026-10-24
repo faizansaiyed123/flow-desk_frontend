@@ -35,9 +35,14 @@ export function useUpdateTask(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Task> }) => api.patch<Task>(`/tasks/${id}`, data),
-    onSuccess: () => {
+    onSuccess: (task) => {
+      // The open task dialog reads ["tasks", taskId]. Update it from the actual
+      // API response so edits (status, title, assignee, etc.) are reflected
+      // immediately, not only after navigating away and back.
+      qc.setQueryData(["tasks", task.id], task);
       qc.invalidateQueries({ queryKey: ["kanban", projectId] });
       qc.invalidateQueries({ queryKey: ["projects", projectId] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
 }
