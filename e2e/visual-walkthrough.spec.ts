@@ -587,10 +587,16 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   const apiKeyData = await apiKeyCreation.json();
   const apiKeyHasExpectedPrefix = typeof apiKeyData.plaintext_key === "string" && apiKeyData.plaintext_key.startsWith("fd_live_");
   const apiKeyHasId = typeof apiKeyData.id === "string" && apiKeyData.id.length > 0;
-  const apiKeyCopyDialogWasVisible = await page.getByRole("heading", { name: /copy your api key/i }).isVisible().catch(() => false);
+  const apiKeyCopyHeading = page.getByRole("heading", { name: /copy your api key/i });
+  await expect(apiKeyCopyHeading).toBeVisible();
+  const renderedSecret = page.getByRole("dialog").locator("code");
+  await expect(renderedSecret).toBeVisible();
+  // Mask the one-time key in the test DOM immediately, before any later assertion
+  // can capture it in a failure screenshot or trace snapshot.
+  await renderedSecret.evaluate((node) => { node.textContent = "[REDACTED]"; });
+  const apiKeyCopyDialogWasVisible = await apiKeyCopyHeading.isVisible();
   await page.getByRole("button", { name: "Done" }).click();
-  // Validate only booleans after dismissing the one-time secret dialog, so any
-  // failed assertion cannot expose the generated plaintext key in screenshots.
+  // Validate only booleans after dismissing the one-time secret dialog.
   expect(apiKeyHasExpectedPrefix).toBe(true);
   expect(apiKeyHasId).toBe(true);
   expect(apiKeyCopyDialogWasVisible).toBe(true);
