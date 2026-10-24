@@ -812,7 +812,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   // Assign two real tasks to the invited member through the task-detail UI. The backend
   // creates notification rows; no notification records or API responses are mocked.
   await page.locator("nav").getByRole("link", { name: "Projects" }).click();
-  await page.getByText(projectName).click();
+  await page.getByRole("link", { name: projectName, exact: true }).click();
   await expect(page.getByRole("heading", { name: projectName })).toBeVisible();
 
   const assignTaskToInvitee = async (title: string) => {
