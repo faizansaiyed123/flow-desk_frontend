@@ -65,3 +65,20 @@ export function useDeleteTimeEntry() {
     },
   });
 }
+
+export function useUpdateTimeEntry() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: {
+      id: string;
+      data: { description?: string | null; started_at?: string; ended_at?: string | null; duration_minutes?: number | null; is_billable?: boolean };
+    }) => api.patch<TimeEntry>(`/time-entries/${id}`, data),
+    onSuccess: (entry) => {
+      qc.invalidateQueries({ queryKey: ["time-entries"] });
+      qc.invalidateQueries({ queryKey: ["timer"] });
+      toast({ title: "Time entry updated", variant: "success" });
+    },
+    onError: (error: Error) =>
+      toast({ title: "Couldn't update time entry", description: error.message, variant: "error" }),
+  });
+}
