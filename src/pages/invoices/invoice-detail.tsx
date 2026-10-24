@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Ban, CheckCircle2, Pencil, Send, Trash2 } from "lucide-react";
-import { useInvoice, useSendInvoice, useMarkInvoicePaid, useVoidInvoice, useDeleteInvoice, useUpdateInvoice } from "@/hooks/use-invoices";
+import { useInvoice, useSendInvoice, useMarkInvoicePaid, useMarkInvoiceOverdue, useVoidInvoice, useDeleteInvoice, useUpdateInvoice } from "@/hooks/use-invoices";
 import { useClient } from "@/hooks/use-clients";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,7 @@ export function InvoiceDetailPage() {
   const { data: client } = useClient(invoice?.client_id);
   const sendInvoice = useSendInvoice();
   const markPaid = useMarkInvoicePaid();
+  const markOverdue = useMarkInvoiceOverdue();
   const voidInvoice = useVoidInvoice();
   const deleteInvoice = useDeleteInvoice();
   const updateInvoice = useUpdateInvoice();
@@ -95,6 +96,16 @@ export function InvoiceDetailPage() {
           {(invoice.status === "sent" || invoice.status === "overdue") && (
             <Button size="sm" variant="secondary" onClick={() => markPaid.mutate(invoice.id)} loading={markPaid.isPending}>
               <CheckCircle2 className="h-3.5 w-3.5" /> Mark paid
+            </Button>
+          )}
+          {invoice.status === "sent" && invoice.due_date < new Date().toISOString().slice(0, 10) && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => markOverdue.mutate(invoice.id)}
+              loading={markOverdue.isPending}
+            >
+              Mark overdue
             </Button>
           )}
           {invoice.status !== "paid" && invoice.status !== "void" && (
