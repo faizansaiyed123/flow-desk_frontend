@@ -22,7 +22,7 @@ The checklist uses three states:
 
 - **Pending** — planned but not yet verified by a successful CI run.
 - **Pass** — the corresponding test completed successfully.
-- **Gap / API-only** — the backend capability exists and is tested at the API/data layer, but the current frontend does not expose a user workflow for it.
+- **Gap / API-only** — the backend capability is tested at the API/data layer, but the UI does not expose a user workflow for it.
 
 Do not treat a screenshot alone as proof that data persisted. For state-changing journeys, use the API response assertions and the direct PostgreSQL checks together.
 
@@ -114,21 +114,27 @@ The browser reloads the project after the status change. The CI database verific
 
 The existing project/Kanban suite adds coverage for project status filters, task title editing, task detail, and comments. The backend suite tests status filtering, task ordering, completion timestamps, moving tasks, validation, comment creation/listing, and deletion.
 
+### Project attachments: upload, download, and delete
+
+![Project files](visuals/07-project-attachments.png)
+
+The project detail screen now has a **Files** tab. Select a real text file to upload it through multipart POST /api/v1/attachments, download the returned file through the API, and compare the downloaded bytes with the original upload. The walkthrough also uploads a second temporary file and deletes it through the real delete endpoint. The SQL check verifies the persistent metadata row, local storage file contents and size, the activity entry, and that the temporary attachment row was removed.
+
 ## 4. Time tracking
 
 ### Log time manually
 
-![Manual time entry](visuals/07-time-tracking-manual-entry.png)
+![Manual time entry](visuals/08-time-tracking-manual-entry.png)
 
 From **Time**, choose **Log time manually**, select the project, enter a date and time, set the duration to 45 minutes, and add a description. The test asserts that POST /api/v1/time-entries succeeds and returns the requested duration.
 
 ### Start and stop the running timer
 
-![Running timer](visuals/08-time-tracking-running.png)
+![Running timer](visuals/09-time-tracking-running.png)
 
 Choose the project and select **Start timer**. The backend creates a real time-entry row with a start time and no end time. The screen then offers **Stop**.
 
-![Timer stopped and entry reloaded](visuals/09-time-tracking-stopped-reloaded.png)
+![Timer stopped and entry reloaded](visuals/10-time-tracking-stopped-reloaded.png)
 
 Select **Stop**. The test verifies that the timer-stop response has an end timestamp, reloads the page, and confirms the manual entry remains visible. PostgreSQL verification checks the manual entry's project, description, and duration.
 
@@ -136,19 +142,21 @@ Select **Stop**. The test verifies that the timer-stop response has an end times
 
 ### Create a draft invoice
 
-![Draft invoice](visuals/10-invoice-draft.png)
+![Edit draft invoice](visuals/11-invoice-draft-edit.png)
 
-Open **Invoices → New invoice**, select the client, and add two units of **Walkthrough implementation** at 50 per unit. The real invoice-create response must be in draft status with a calculated total of 100.
+Open **Invoices → New invoice**, select the client, and add two units of **Walkthrough implementation** at 50 per unit. The real invoice-create response must be in draft status with a calculated total of 100. The draft's **Edit** control now opens a form for issue/due dates, tax, notes, and line items. The walkthrough updates the notes and asserts that PATCH /api/v1/invoices/{invoice_id} returns the saved value.
+
+![Draft invoice after editing](visuals/12-invoice-draft.png)
 
 ### Send the invoice
 
-![Sent invoice](visuals/11-invoice-sent.png)
+![Sent invoice](visuals/13-invoice-sent.png)
 
 Select **Send**. The browser verifies the POST /api/v1/invoices/{invoice_id}/send response and the visible status transition to sent. The server validates the lifecycle; the UI does not merely relabel the invoice.
 
 ### Mark it paid and read it again
 
-![Paid invoice after reload](visuals/12-invoice-paid-reloaded.png)
+![Paid invoice after reload](visuals/14-invoice-paid-reloaded.png)
 
 Select **Mark paid**, verify the API response, reload the invoice, and read its status from a fresh GET request. PostgreSQL verification checks the paid invoice row and its stored line item/amount.
 
@@ -156,21 +164,27 @@ The existing invoicing tests also exercise API validation and lifecycle behavior
 
 ## 6. Workspace, team, and integrations
 
+### Profile editing
+
+![Updated profile](visuals/15-settings-profile.png)
+
+The Profile tab is now editable instead of read-only for the user's name. Saving calls PATCH /api/v1/users/me, updates the query cache from the server response, and the final PostgreSQL check verifies the changed name in the user record associated with the test workspace. The page also provides password-change controls backed by the existing auth endpoint.
+
 ### Workspace settings
 
-![Workspace settings](visuals/14-settings-workspace.png)
+![Workspace settings](visuals/16-settings-workspace.png)
 
 The Workspace tab reads the current tenant from the API. The walkthrough leaves the workspace name unchanged so the database assertions can identify the test tenant deterministically.
 
 ### Team invitation
 
-![Pending team invitation](visuals/15-settings-team-invitation.png)
+![Pending team invitation](visuals/17-settings-team-invitation.png)
 
 From **Settings → Team → Invite**, enter the invited email and submit. The test checks the real POST /api/v1/tenants/invitations response and the pending invitation displayed on the page.
 
 ### API key
 
-![API key management](visuals/16-settings-api-keys.png)
+![API key management](visuals/18-settings-api-keys.png)
 
 Create an API key from **Settings → API Keys**. The actual API returns a one-time plaintext key, but the test deliberately does not print it or include it in a screenshot. After the dialog is dismissed, the list displays the key name/prefix and active status.
 
@@ -178,23 +192,31 @@ The database check verifies a key row exists with a stored hash. It does not exp
 
 ### Webhook configuration
 
-![Webhook configuration](visuals/17-settings-webhooks.png)
+![Webhook configuration](visuals/19-settings-webhooks.png)
 
-Open **Settings → Webhooks**, enter a target URL, select the task.created event, and save. The browser asserts a successful webhook-create response, and PostgreSQL verification confirms that the configuration exists and is active.
+Open **Settings → Webhooks**, enter a target URL, select the task.created event, and save. The browser asserts a successful webhook-create response. The new **Pause/Activate** control sends PATCH /api/v1/webhooks/{webhook_id}, and **Delivery history** reads GET /api/v1/webhooks/{webhook_id}/deliveries. The PostgreSQL verification confirms that the webhook is active after the pause/reactivate cycle.
 
 Webhook delivery is separate from configuration. Backend API tests exercise delivery logging and successful/failed outbound requests using controlled HTTP test doubles; those tests do not replace frontend/API responses in the browser walkthrough.
 
-## 7. Global search and notifications
+## 7. Global search and activity
 
 ### Search across the workspace
 
-![Global search results](visuals/18-global-search.png)
+### Search across the workspace
+
+![Global search results](visuals/20-global-search.png)
 
 Open search with **Ctrl+K** and search for the project created earlier in the run. The browser waits for the actual GET /api/v1/search response and confirms the result is visible. Tenant isolation is separately exercised by the existing browser suite, which creates two real workspaces and verifies that one workspace's client is not returned to the other.
 
-### Notifications
+### Workspace activity timeline
 
-![Notification menu](visuals/19-notifications.png)
+![Recent workspace activity](visuals/21-activity-feed.png)
+
+The new Activity navigation item calls GET /api/v1/activity and renders recent workspace-scoped changes. The walkthrough confirms that the upload action appears in the returned activity collection; SQL independently verifies the related activity log entry.
+
+## 8. Notifications
+
+![Notification menu](visuals/22-notifications.png)
 
 Open the notification menu. The shell reads the notification list and unread count from the backend. A new workspace may have no notifications, so an empty message is expected; it must not be represented as test-seeded notification data.
 
@@ -217,9 +239,9 @@ The workflow runs the backend API suite, frontend unit tests, frontend lint and 
 | Webhook configuration and delivery logging | Browser configuration test + webhook API tests + SQL check | Pending CI run |
 | Global search and tenant isolation | Browser E2E + backend search/activity tests | Pending CI run |
 | Notifications and unread count | Browser observation + backend notification tests | Pending CI run |
-| Attachments: upload, list, download, delete, extension/parent validation | Backend API/PostgreSQL/file tests | Pending CI run — API-only in current UI |
-| Profile endpoint and activity history | Backend/API tests and source inventory | Pending CI run — UI coverage needs review |
-| Webhook edit and delivery-history controls | Backend endpoints and hooks exist; current Settings UI exposes create/delete only | UI integration gap |
+| Attachments: upload, list, download, delete, extension/parent validation | Real project UI + API response checks + PostgreSQL and local disk checks | Pending CI run |
+| Profile updates and activity history | Real profile PATCH + SQL user check; activity GET + audit row check | Pending CI run |
+| Webhook activation and delivery history | Real PATCH + GET requests; final active state verified in PostgreSQL | Pending CI run |
 | Responsive mobile shell | Existing responsive Playwright test | Pending CI run |
 | Production bundle, lint, unit tests | Vite build, Oxlint, Vitest | Pending CI run |
 | Database migrations from Alembic head | Dedicated PostgreSQL database in CI | Pending CI run |
@@ -228,7 +250,7 @@ The workflow runs the backend API suite, frontend unit tests, frontend lint and 
 
 The backend registers these route groups under /api/v1: authentication; tenant/workspace and invitations; user profile; clients; projects; tasks and task comments; notifications; time entries and timer actions; invoices; webhooks and deliveries; API keys; attachments; activity; dashboard summary; and search. The backend test directory contains modules covering each of those major domain areas.
 
-Not every backend endpoint currently has a corresponding screen or control in the frontend. Attachment operations have backend coverage but no visible attachment workflow in the app navigation/project detail; activity is fetched through a hook but has no dedicated route in src/App.tsx; and webhook update/delivery-history hooks are not exposed as controls in Settings. These are documented as integration gaps, not presented as complete click-through UI features.
+The walkthrough branch adds user-visible project file upload/download/delete, an Activity page, profile editing, draft invoice editing, and webhook activation/delivery history. These new paths are included in the browser suite and need a successful full CI run before they can be treated as verified. Other API endpoints may still lack a first-class screen; the route inventory and test results should be reviewed before treating every endpoint as a completed end-user workflow.
 
 ## 9. Reproduce the full-stack test locally
 
