@@ -584,11 +584,23 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     () => page.getByRole("button", { name: /generate key/i }).click(),
   );
   // Read the response to ensure this was a real generated secret but never log or persist it.
-  expect((await apiKeyCreation.json()).plaintext_key).toMatch(/^fd_live_/);
+  const apiKeyData = await apiKeyCreation.json();
+  expect(apiKeyData.plaintext_key).toMatch(/^fd_live_/);
+  expect(apiKeyData.id).toBeTruthy();
   await expect(page.getByRole("heading", { name: /copy your api key/i })).toBeVisible();
   await page.getByRole("button", { name: "Done" }).click();
-  await expect(page.getByText("Walkthrough automation key")).toBeVisible();
+  await expect(page.getByText("Walkthrough automation key", { exact: true })).toBeVisible();
   await capture(page, "18-settings-api-keys");
+  const apiKeyRow = page.getByText("Walkthrough automation key", { exact: true }).locator("..").locator("..");
+  const revokedApiKey = await expectSuccessfulApiAction(
+    page,
+    "DELETE",
+    "/api-keys/" + apiKeyData.id,
+    () => apiKeyRow.getByRole("button").click(),
+  );
+  expect((await revokedApiKey.json()).message).toMatch(/revoked/i);
+  await expect(apiKeyRow.getByText("Revoked", { exact: true })).toBeVisible();
+  await capture(page, "18b-settings-api-key-revoked");
 
   await page.getByRole("tab", { name: "Webhooks" }).click();
   await page.getByRole("button", { name: /new webhook/i }).click();
@@ -627,6 +639,30 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   expect((await deliveryHistory).ok()).toBeTruthy();
   await expect(page.getByText("No delivery attempts yet.")).toBeVisible();
   await capture(page, "19-settings-webhooks");
+
+  // Verify deletion with a second disposable configuration; keep the primary webhook active.
+  await page.getByRole("button", { name: "Hide delivery history" }).click();
+  const disposableWebhookUrl = "https://hooks.example.com/flowdesk-delete-walkthrough";
+  await page.getByRole("button", { name: /new webhook/i }).click();
+  await page.getByLabel("Target URL").fill(disposableWebhookUrl);
+  await page.getByRole("button", { name: "task.updated", exact: true }).click();
+  const disposableWebhookResponse = await expectSuccessfulApiAction(
+    page,
+    "POST",
+    "/webhooks",
+    () => page.getByRole("button", { name: /create webhook/i }).click(),
+  );
+  const disposableWebhook = await disposableWebhookResponse.json();
+  expect(disposableWebhook.target_url).toBe(disposableWebhookUrl);
+  const deletedWebhook = await expectSuccessfulApiAction(
+    page,
+    "DELETE",
+    "/webhooks/" + disposableWebhook.id,
+    () => page.getByRole("button", { name: "Delete webhook " + disposableWebhookUrl }).click(),
+  );
+  expect((await deletedWebhook.json()).message).toMatch(/deleted/i);
+  await expect(page.getByText(disposableWebhookUrl, { exact: true })).toHaveCount(0);
+  await capture(page, "19b-settings-webhook-deleted");
 
   // Global search and notifications use the backend API, not an in-browser fixture.
   await page.keyboard.press("Control+k");

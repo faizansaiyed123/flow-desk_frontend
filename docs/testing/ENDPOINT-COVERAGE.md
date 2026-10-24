@@ -126,16 +126,16 @@ This file is the endpoint-level companion to [the visual full-stack walkthrough]
 | POST | `/api/v1/webhooks` | Configure destination/events; secret returned once |
 | GET | `/api/v1/webhooks` | List workspace webhooks |
 | PATCH | `/api/v1/webhooks/{webhook_id}` | Pause/reactivate state via Settings |
-| DELETE | `/api/v1/webhooks/{webhook_id}` | Delete webhook |
+| DELETE | `/api/v1/webhooks/{webhook_id}` | Browser deletes a disposable webhook; SQL verifies the row is gone while the primary webhook remains active |
 | GET | `/api/v1/webhooks/{webhook_id}/deliveries` | Read delivery history in Settings |
 
 ### API keys — `tests/test_api_keys.py`
 
 | Method | Path | Frontend workflow and test focus |
 |---|---|---|
-| POST | `/api/v1/api-keys` | Create key; display plaintext only once |
+| POST | `/api/v1/api-keys` | Create key; display plaintext only once and never store it in screenshots/logs |
 | GET | `/api/v1/api-keys` | List prefix/metadata without exposing plaintext |
-| DELETE | `/api/v1/api-keys/{api_key_id}` | Revoke key; revoked key cannot authenticate |
+| DELETE | `/api/v1/api-keys/{api_key_id}` | Browser revokes the key; PostgreSQL verifies its hash remains and `is_active` is false; backend tests verify revoked keys cannot authenticate |
 
 ### Attachments — `tests/test_attachments.py`
 

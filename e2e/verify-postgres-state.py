@@ -133,9 +133,10 @@ try:
     )
 
     check(
-        "API key record persisted without storing its plaintext value",
+        "API key persisted as a hash, then revoked without exposing plaintext",
         "SELECT EXISTS (SELECT 1 FROM api_keys WHERE tenant_id = %s "
-        "AND name = %s AND hashed_key IS NOT NULL AND length(hashed_key) > 20)",
+        "AND name = %s AND hashed_key IS NOT NULL AND length(hashed_key) > 20 "
+        "AND is_active = FALSE AND revoked_at IS NOT NULL)",
         (tenant_id, "Walkthrough automation key"),
     )
 
@@ -144,6 +145,12 @@ try:
         "SELECT EXISTS (SELECT 1 FROM webhooks WHERE tenant_id = %s AND target_url = %s "
         "AND is_active = TRUE)",
         (tenant_id, "https://hooks.example.com/flowdesk-walkthrough"),
+    )
+
+    check(
+        "disposable webhook was deleted through the UI and API",
+        "SELECT NOT EXISTS (SELECT 1 FROM webhooks WHERE tenant_id = %s AND target_url = %s)",
+        (tenant_id, "https://hooks.example.com/flowdesk-delete-walkthrough"),
     )
 
     with connection.cursor() as cursor:

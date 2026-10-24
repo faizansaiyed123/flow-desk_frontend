@@ -218,6 +218,10 @@ Create an API key from **Settings → API Keys**. The actual API returns a one-t
 
 The database check verifies a key row exists with a stored hash. It does not expect the database to contain the plaintext secret.
 
+![Revoked API key](visuals/18b-settings-api-key-revoked.png)
+
+The test revokes that key through its row control, checks the real DELETE response, and verifies in PostgreSQL that the hash remains while `is_active = false` and `revoked_at` is set.
+
 ### Webhook configuration
 
 ![Webhook configuration](visuals/19-settings-webhooks.png)
@@ -225,6 +229,10 @@ The database check verifies a key row exists with a stored hash. It does not exp
 Open **Settings → Webhooks**, enter a target URL, select the task.created event, and save. The browser asserts a successful webhook-create response. The new **Pause/Activate** control sends PATCH /api/v1/webhooks/{webhook_id}, and **Delivery history** reads GET /api/v1/webhooks/{webhook_id}/deliveries. The PostgreSQL verification confirms that the webhook is active after the pause/reactivate cycle.
 
 Webhook delivery is separate from configuration. Backend API tests exercise delivery logging and successful/failed outbound requests using controlled HTTP test doubles; those tests do not replace frontend/API responses in the browser walkthrough.
+
+![Deleted webhook configuration](visuals/19b-settings-webhook-deleted.png)
+
+A second disposable webhook is deleted from its row. The browser asserts the real DELETE response and disappearance from the UI, while SQL verifies that the deleted row is gone and the primary webhook remains active.
 
 ## 7. Global search and activity
 
