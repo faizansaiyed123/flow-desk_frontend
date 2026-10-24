@@ -120,6 +120,10 @@ The browser reloads the project after the status change. The CI database verific
 
 The existing project/Kanban suite adds coverage for project status filters, task title editing, task detail, and comments. The backend suite tests status filtering, task ordering, completion timestamps, moving tasks, validation, comment creation/listing, and deletion.
 
+![Task assigned to a workspace member](visuals/06b-task-assigned.png)
+
+From task details, choose a workspace member in the **Assignee** control. The browser asserts the task PATCH response contains that member's ID; assigning to the invited teammate creates a real notification, which is read in the later notification section.
+
 ### Project attachments: upload, download, and delete
 
 ![Project files](visuals/07-project-attachments.png)

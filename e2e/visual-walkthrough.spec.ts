@@ -586,12 +586,14 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   // Read the response to ensure this was a real generated secret but never log or persist it.
   const apiKeyData = await apiKeyCreation.json();
   const apiKeyHasExpectedPrefix = typeof apiKeyData.plaintext_key === "string" && apiKeyData.plaintext_key.startsWith("fd_live_");
-  expect(apiKeyData.id).toBeTruthy();
-  await expect(page.getByRole("heading", { name: /copy your api key/i })).toBeVisible();
+  const apiKeyHasId = typeof apiKeyData.id === "string" && apiKeyData.id.length > 0;
+  const apiKeyCopyDialogWasVisible = await page.getByRole("heading", { name: /copy your api key/i }).isVisible().catch(() => false);
   await page.getByRole("button", { name: "Done" }).click();
-  // Validate only a boolean after dismissing the one-time secret dialog, so any
-  // failure screenshot/report cannot include the generated plaintext key.
+  // Validate only booleans after dismissing the one-time secret dialog, so any
+  // failed assertion cannot expose the generated plaintext key in screenshots.
   expect(apiKeyHasExpectedPrefix).toBe(true);
+  expect(apiKeyHasId).toBe(true);
+  expect(apiKeyCopyDialogWasVisible).toBe(true);
   await expect(page.getByText("Walkthrough automation key", { exact: true })).toBeVisible();
   await capture(page, "18-settings-api-keys");
   const apiKeyRow = page.getByText("Walkthrough automation key", { exact: true }).locator("..").locator("..");
@@ -725,13 +727,13 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
       },
     );
     expect((await assignmentResponse.json()).assignee_id).toBe(invitedUserId);
+    if (title === "Notification individual read") await capture(page, "06b-task-assigned");
     await page.keyboard.press("Escape");
     return createdTask;
   };
 
   const individualReadTask = await assignTaskToInvitee("Notification individual read");
   const markAllReadTask = await assignTaskToInvitee("Notification bulk read");
-  await capture(page, "06b-task-assigned");
 
   // Reload the invitee session so its notification queries read the task-assignment rows
   // just created in PostgreSQL by the owner session.
