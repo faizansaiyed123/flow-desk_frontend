@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/page-header";
-import { useMe, useChangePassword } from "@/hooks/use-auth";
+import { useMe, useChangePassword, useUpdateProfile } from "@/hooks/use-auth";
 import { useCurrentTenant, useUpdateTenant, useTeamMembers, useUpdateMemberRole, useRemoveMember, useInvitations, useCreateInvitation, useRevokeInvitation } from "@/hooks/use-team";
 import { useApiKeys, useCreateApiKey, useRevokeApiKey } from "@/hooks/use-api-keys";
 import { useWebhooks, useCreateWebhook, useDeleteWebhook } from "@/hooks/use-webhooks";
@@ -42,6 +42,10 @@ export function SettingsPage() {
 function ProfileTab() {
   const { data: me } = useMe();
   const changePassword = useChangePassword();
+  const updateProfile = useUpdateProfile();
+  const profileForm = useForm<{ full_name: string }>({
+    values: me ? { full_name: me.user.full_name } : undefined,
+  });
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     defaultValues: { current_password: "", new_password: "" },
   });
@@ -50,8 +54,21 @@ function ProfileTab() {
     <div className="max-w-md space-y-6">
       <Card>
         <CardHeader><CardTitle>Your profile</CardTitle></CardHeader>
-        <CardContent className="space-y-3 pt-2 text-sm">
-          <div><p className="text-xs text-paper-500">Name</p><p className="text-paper-100">{me?.user.full_name}</p></div>
+        <CardContent className="space-y-4 pt-2 text-sm">
+          <form
+            onSubmit={profileForm.handleSubmit((values) => updateProfile.mutate(values))}
+            className="space-y-3"
+            noValidate
+          >
+            <div>
+              <Label htmlFor="profile_full_name">Full name</Label>
+              <Input id="profile_full_name" {...profileForm.register("full_name", { required: true, minLength: 1 })} />
+              {profileForm.formState.errors.full_name && (
+                <p className="mt-1 text-xs text-clay-400">Your name is required.</p>
+              )}
+            </div>
+            <Button type="submit" loading={updateProfile.isPending}>Save profile</Button>
+          </form>
           <div><p className="text-xs text-paper-500">Email</p><p className="text-paper-100">{me?.user.email}</p></div>
         </CardContent>
       </Card>
