@@ -254,13 +254,22 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   expect(attachment.project_id).toBe(project.id);
   await expect(page.getByText("walkthrough-evidence.txt")).toBeVisible();
 
+  // Content-Disposition makes Chromium treat the response as a download, so
+  // verify the saved browser download rather than reading response.body() (which
+  // is not exposed for attachment downloads in Playwright's captured response).
+  const browserDownloadPromise = page.waitForEvent("download");
   const attachmentDownload = await expectSuccessfulApiAction(
     page,
     "GET",
     "/attachments/" + attachment.id + "/download",
     () => page.getByRole("button", { name: "Download walkthrough-evidence.txt" }).click(),
   );
-  expect((await attachmentDownload.body()).toString("utf8")).toBe(attachmentContent);
+  expect(attachmentDownload.status()).toBe(200);
+  const browserDownload = await browserDownloadPromise;
+  expect(browserDownload.suggestedFilename()).toBe("walkthrough-evidence.txt");
+  const downloadedPath = await browserDownload.path();
+  if (!downloadedPath) throw new Error("The attachment download did not produce a local file.");
+  expect((await readFile(downloadedPath)).toString("utf8")).toBe(attachmentContent);
 
   await expectSuccessfulApiAction(
     page,
@@ -300,7 +309,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   );
   const manualEntry = await manualTime.json();
   expect(manualEntry.duration_minutes).toBe(45);
-  await expect(page.getByText("Manual verification entry edited")).toBeVisible();
+  await expect(page.getByText("Manual verification entry")).toBeVisible();
   const updatedManualTime = await expectSuccessfulApiAction(
     page,
     "PATCH",
