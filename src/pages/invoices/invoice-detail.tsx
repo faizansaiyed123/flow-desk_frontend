@@ -182,7 +182,7 @@ export function InvoiceDetailPage() {
               <Input id="invoice-edit-tax-rate" type="number" min="0" max="100" step="0.01" {...editForm.register("tax_rate", { valueAsNumber: true, min: 0, max: 100 })} />
             </div>
             <div>
-              <Label htmlFor="invoice-edit-notes">Notes</Label>
+              <Label htmlFor="invoice-edit-notes">Invoice notes</Label>
               <Textarea id="invoice-edit-notes" rows={2} {...editForm.register("notes")} />
             </div>
             <div className="space-y-3">
