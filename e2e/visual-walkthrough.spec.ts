@@ -228,6 +228,55 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await expect(page.getByText(taskTitle).first()).toBeVisible();
   await capture(page, "06-task-status-reloaded");
 
+  // Project attachments: upload a real multipart file, download its bytes, and delete a second file.
+  await page.getByRole("tab", { name: "Files" }).click();
+  await expect(page.getByText("No files attached yet.")).toBeVisible();
+  const attachmentContent = "FlowDesk real full-stack walkthrough attachment. PostgreSQL and disk storage are verified.";
+  const attachmentResponse = await expectSuccessfulApiAction(
+    page,
+    "POST",
+    "/attachments",
+    () => page.getByLabel("Upload project attachment").setInputFiles({
+      name: "walkthrough-evidence.txt",
+      mimeType: "text/plain",
+      buffer: Buffer.from(attachmentContent, "utf8"),
+    }),
+  );
+  const attachment = await attachmentResponse.json();
+  expect(attachment.file_name).toBe("walkthrough-evidence.txt");
+  expect(attachment.project_id).toBe(project.id);
+  await expect(page.getByText("walkthrough-evidence.txt")).toBeVisible();
+
+  const attachmentDownload = await expectSuccessfulApiAction(
+    page,
+    "GET",
+    "/attachments/" + attachment.id + "/download",
+    () => page.getByRole("button", { name: "Download walkthrough-evidence.txt" }).click(),
+  );
+  expect((await attachmentDownload.body()).toString("utf8")).toBe(attachmentContent);
+
+  await expectSuccessfulApiAction(
+    page,
+    "POST",
+    "/attachments",
+    () => page.getByLabel("Upload project attachment").setInputFiles({
+      name: "temporary-delete.txt",
+      mimeType: "text/plain",
+      buffer: Buffer.from("Delete this real upload after verifying the delete endpoint.", "utf8"),
+    }),
+  );
+  await expect(page.getByText("temporary-delete.txt")).toBeVisible();
+  await expectSuccessfulApiAction(
+    page,
+    "DELETE",
+    "/attachments/" + (await page.getByText("temporary-delete.txt").evaluate((node) =>
+      node.closest("[data-attachment-id]")?.getAttribute("data-attachment-id") ?? ""
+    )),
+    () => page.getByRole("button", { name: "Delete temporary-delete.txt" }).click(),
+  );
+  await expect(page.getByText("temporary-delete.txt")).not.toBeVisible();
+  await capture(page, "07-project-attachments");
+
   // Manual time entry plus the server-side timer lifecycle.
   await page.getByRole("link", { name: "Time" }).click();
   await page.getByRole("button", { name: /log time manually/i }).click();
@@ -244,7 +293,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   );
   expect((await manualTime.json()).duration_minutes).toBe(45);
   await expect(page.getByText("Manual verification entry")).toBeVisible();
-  await capture(page, "07-time-tracking-manual-entry");
+  await capture(page, "08-time-tracking-manual-entry");
 
   await page.getByText("Select a project to start timing").click();
   await page.getByRole("option", { name: projectName }).click();
@@ -255,7 +304,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     () => page.getByRole("button", { name: /start timer/i }).click(),
   );
   await expect(page.getByRole("button", { name: /stop/i })).toBeVisible();
-  await capture(page, "08-time-tracking-running");
+  await capture(page, "09-time-tracking-running");
   const stoppedTimer = await expectSuccessfulApiAction(
     page,
     "POST",
@@ -266,7 +315,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await expect(page.getByText("Manual verification entry")).toBeVisible();
   await page.reload();
   await expect(page.getByText("Manual verification entry")).toBeVisible();
-  await capture(page, "09-time-tracking-stopped-reloaded");
+  await capture(page, "10-time-tracking-stopped-reloaded");
 
   // Invoice lifecycle: draft → sent → paid, followed by a fresh server read.
   await page.getByRole("link", { name: "Invoices" }).click();
@@ -286,7 +335,19 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   expect(invoice.status).toBe("draft");
   expect(Number(invoice.total)).toBe(100);
   await expect(page.locator('[aria-label="Invoice status: draft"]')).toBeVisible();
-  await capture(page, "10-invoice-draft");
+  await page.getByRole("button", { name: "Edit" }).click();
+  await expect(page.getByRole("heading", { name: "Edit draft invoice" })).toBeVisible();
+  await page.getByLabel("Invoice notes").fill("Edited in the full-stack walkthrough.");
+  await capture(page, "11-invoice-draft-edit");
+  const invoiceUpdated = await expectSuccessfulApiAction(
+    page,
+    "PATCH",
+    "/invoices/" + invoice.id,
+    () => page.getByRole("button", { name: "Save draft changes" }).click(),
+  );
+  expect((await invoiceUpdated.json()).notes).toBe("Edited in the full-stack walkthrough.");
+  await expect(page.locator('[aria-label="Invoice status: draft"]')).toBeVisible();
+  await capture(page, "12-invoice-draft");
 
   const invoiceSent = await expectSuccessfulApiAction(
     page,
@@ -296,7 +357,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   );
   expect((await invoiceSent.json()).status).toBe("sent");
   await expect(page.locator('[aria-label="Invoice status: sent"]')).toBeVisible();
-  await capture(page, "11-invoice-sent");
+  await capture(page, "13-invoice-sent");
 
   const invoicePaid = await expectSuccessfulApiAction(
     page,
@@ -315,14 +376,25 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   expect(freshInvoice.ok()).toBeTruthy();
   expect((await freshInvoice.json()).status).toBe("paid");
   await expect(page.locator('[aria-label="Invoice status: paid"]')).toBeVisible();
-  await capture(page, "12-invoice-paid-reloaded");
+  await capture(page, "14-invoice-paid-reloaded");
 
   // Settings: invitation, one-time API key, webhook. Never screenshot secrets.
   await page.getByRole("link", { name: "Settings" }).click();
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
-  await capture(page, "13-settings-profile");
+  const profileUpdate = await expectSuccessfulApiAction(
+    page,
+    "PATCH",
+    "/users/me",
+    async () => {
+      await page.getByLabel("Full name").fill("FlowDesk Walkthrough User Updated");
+      await page.getByRole("button", { name: "Save profile" }).click();
+    },
+  );
+  expect((await profileUpdate.json()).full_name).toBe("FlowDesk Walkthrough User Updated");
+  await expect(page.getByLabel("Full name")).toHaveValue("FlowDesk Walkthrough User Updated");
+  await capture(page, "15-settings-profile");
   await page.getByRole("tab", { name: "Workspace" }).click();
-  await capture(page, "14-settings-workspace");
+  await capture(page, "16-settings-workspace");
 
   await page.getByRole("tab", { name: "Team" }).click();
   const inviteEmail = "walkthrough-invitation@example.com";
@@ -338,7 +410,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   );
   expect((await invitation.json()).email).toBe(inviteEmail);
   await expect(page.getByText(inviteEmail)).toBeVisible();
-  await capture(page, "15-settings-team-invitation");
+  await capture(page, "17-settings-team-invitation");
 
   await page.getByRole("tab", { name: /api keys/i }).click();
   await page.getByRole("button", { name: /new key/i }).click();
@@ -354,7 +426,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await expect(page.getByRole("heading", { name: /copy your api key/i })).toBeVisible();
   await page.getByRole("button", { name: "Done" }).click();
   await expect(page.getByText("Walkthrough automation key")).toBeVisible();
-  await capture(page, "16-settings-api-keys");
+  await capture(page, "18-settings-api-keys");
 
   await page.getByRole("tab", { name: "Webhooks" }).click();
   await page.getByRole("button", { name: /new webhook/i }).click();
@@ -367,9 +439,32 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "/webhooks",
     () => page.getByRole("button", { name: /create webhook/i }).click(),
   );
-  expect((await webhook.json()).target_url).toBe(webhookUrl);
+  const webhookData = await webhook.json();
+  expect(webhookData.target_url).toBe(webhookUrl);
   await expect(page.getByText(webhookUrl)).toBeVisible();
-  await capture(page, "17-settings-webhooks");
+  const pausedWebhook = await expectSuccessfulApiAction(
+    page,
+    "PATCH",
+    "/webhooks/" + webhookData.id,
+    () => page.getByRole("button", { name: "Pause" }).click(),
+  );
+  expect((await pausedWebhook.json()).is_active).toBe(false);
+  await expect(page.getByText("Paused", { exact: true })).toBeVisible();
+  const activeWebhook = await expectSuccessfulApiAction(
+    page,
+    "PATCH",
+    "/webhooks/" + webhookData.id,
+    () => page.getByRole("button", { name: "Activate" }).click(),
+  );
+  expect((await activeWebhook.json()).is_active).toBe(true);
+  const deliveryHistory = page.waitForResponse((response) =>
+    response.request().method() === "GET" &&
+    new URL(response.url()).pathname === "/api/v1/webhooks/" + webhookData.id + "/deliveries",
+  );
+  await page.getByRole("button", { name: "Delivery history" }).click();
+  expect((await deliveryHistory).ok()).toBeTruthy();
+  await expect(page.getByText("No delivery attempts yet.")).toBeVisible();
+  await capture(page, "19-settings-webhooks");
 
   // Global search and notifications use the backend API, not an in-browser fixture.
   await page.keyboard.press("Control+k");
@@ -382,14 +477,27 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   const searchResponse = await searchResponsePromise;
   expect(searchResponse.ok()).toBeTruthy();
   await expect(page.getByText(projectName).first()).toBeVisible();
-  await capture(page, "18-global-search");
+  await capture(page, "20-global-search");
 
   await page.keyboard.press("Escape");
+  const activityResponsePromise = page.waitForResponse((response) =>
+    response.request().method() === "GET" &&
+    new URL(response.url()).pathname === "/api/v1/activity",
+  );
+  await page.getByRole("link", { name: "Activity" }).click();
+  await expect(page.getByRole("heading", { name: "Activity" })).toBeVisible();
+  const activityResponse = await activityResponsePromise;
+  expect(activityResponse.ok()).toBeTruthy();
+  const activityItems = await activityResponse.json();
+  expect(activityItems.length).toBeGreaterThan(0);
+  expect(activityItems.some((item: { entity_label?: string }) => item.entity_label === "walkthrough-evidence.txt")).toBeTruthy();
+  await capture(page, "21-activity-feed");
+
   await page.locator("button:has(svg.lucide-bell)").click();
   await expect(page.getByText("Notifications")).toBeVisible();
   await expect.poll(() => observedApiResponses.some((r) => r.path === "/api/v1/notifications")).toBeTruthy();
   await expect.poll(() => observedApiResponses.some((r) => r.path === "/api/v1/notifications/unread-count")).toBeTruthy();
-  await capture(page, "19-notifications");
+  await capture(page, "22-notifications");
 
   // Sanity-check the browser actually crossed the frontend/API boundary for core workflows.
   for (const expectedPath of [
