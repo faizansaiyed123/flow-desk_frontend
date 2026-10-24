@@ -70,7 +70,7 @@ export function ProjectCreateDialog({
                 control={control}
                 name="status"
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select value={field.value ?? "active"} onValueChange={field.onChange}>
                     <SelectTrigger id="project_status"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="active">Active</SelectItem>
@@ -83,7 +83,7 @@ export function ProjectCreateDialog({
             </div>
             <div>
               <Label>Color</Label>
-              <Controller control={control} name="color" render={({ field }) => <ColorPicker value={field.value} onChange={field.onChange} />} />
+              <Controller control={control} name="color" render={({ field }) => <ColorPicker value={field.value ?? "#c6963e"} onChange={field.onChange} />} />
             </div>
           </div>
           <DialogFooter>
