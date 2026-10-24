@@ -13,10 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const schema = z.object({
   name: z.string().min(1, "Project name is required."),
   description: z.string().max(2000).optional(),
-  status: z.string().default("active"),
+  status: z.enum(["active", "completed", "archived"]).default("active"),
   color: z.string().default("#c6963e"),
 });
-type FormValues = z.infer<typeof schema>;
+type FormInput = z.input<typeof schema>;
+type FormValues = z.output<typeof schema>;
 
 export function ProjectCreateDialog({
   open,
@@ -35,7 +36,11 @@ export function ProjectCreateDialog({
     reset,
     control,
     formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema), mode: "onChange" });
+  } = useForm<FormInput, unknown, FormValues>({
+    resolver: zodResolver(schema),
+    mode: "onChange",
+    defaultValues: { name: "", description: "", status: "active", color: "#c6963e" },
+  });
 
   useEffect(() => {
     if (open) reset();
