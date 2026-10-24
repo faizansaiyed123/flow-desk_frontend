@@ -17,11 +17,12 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
-proxy: {
-        '/api': {
-          target: 'http://localhost:8001',
-          changeOrigin: true,
-        },
+    proxy: {
+      '/api': {
+        // Match the backend's documented/default Uvicorn port (Dockerfile + E2E setup).
+        target: 'http://localhost:8000',
+        changeOrigin: true,
       },
+    },
   },
 })
