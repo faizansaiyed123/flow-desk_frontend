@@ -410,7 +410,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await capture(page, "14-invoice-paid-reloaded");
 
   // A past-due sent invoice can be explicitly transitioned to overdue.
-  await page.getByRole("link", { name: "Invoices" }).click();
+  await page.locator("nav").getByRole("link", { name: "Invoices" }).click();
   await page.getByRole("button", { name: /new invoice/i }).click();
   await page.getByLabel("Client").click();
   await page.getByRole("option", { name: clientName }).click();
