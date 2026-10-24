@@ -33,7 +33,7 @@ test.describe("Invoicing", () => {
     await page.getByLabel(/unit price/i).first().fill("50");
     await page.getByRole("button", { name: /create invoice/i }).click();
 
-    await expect(page.getByText("$500")).toBeVisible();
+    await expect(page.getByRole("cell", { name: "$500.00" })).toBeVisible();
     await expect(page.locator('[aria-label="Invoice status: draft"]').first()).toBeVisible();
 
     await page.getByRole("button", { name: /send/i }).click();
