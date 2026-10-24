@@ -61,7 +61,10 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await capture(page, "00-login");
 
   await page.getByRole("link", { name: /forgot password/i }).click();
-  await page.getByRole("textbox", { name: "Email" }).fill("not-registered@walkthrough.com");
+  const recoveryEmail = uniqueEmail();
+  const recoveryEmailInput = page.getByRole("textbox", { name: "Email" });
+  await recoveryEmailInput.fill(recoveryEmail);
+  await expect(recoveryEmailInput).toHaveValue(recoveryEmail);
   const recovery = await expectSuccessfulApiAction(
     page,
     "POST",
@@ -136,7 +139,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
       await page.getByRole("button", { name: "New client" }).click();
       await page.getByLabel("Name").fill(clientName);
       await page.getByLabel("Company").fill("Walkthrough Studio");
-      await page.getByLabel("Email").fill("billing@walkthrough.com");
+      await page.getByLabel("Email").fill(uniqueEmail());
       await page.getByRole("button", { name: "Create client" }).click();
     },
   );
