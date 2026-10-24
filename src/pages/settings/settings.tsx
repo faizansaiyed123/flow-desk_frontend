@@ -13,9 +13,9 @@ import { PageHeader } from "@/components/page-header";
 import { useMe, useChangePassword, useUpdateProfile } from "@/hooks/use-auth";
 import { useCurrentTenant, useUpdateTenant, useTeamMembers, useUpdateMemberRole, useRemoveMember, useInvitations, useCreateInvitation, useRevokeInvitation } from "@/hooks/use-team";
 import { useApiKeys, useCreateApiKey, useRevokeApiKey } from "@/hooks/use-api-keys";
-import { useWebhooks, useCreateWebhook, useDeleteWebhook } from "@/hooks/use-webhooks";
+import { useWebhooks, useCreateWebhook, useDeleteWebhook, useUpdateWebhook, useWebhookDeliveries } from "@/hooks/use-webhooks";
 import { formatDate } from "@/lib/format";
-import type { MembershipRole } from "@/types/api";
+import type { MembershipRole, Webhook } from "@/types/api";
 
 export function SettingsPage() {
   return (
@@ -345,17 +345,63 @@ function WebhooksTab() {
       <CardContent className="space-y-1 pt-2">
         {!webhooks?.length && <p className="py-6 text-center text-sm text-paper-500">No webhooks configured.</p>}
         {webhooks?.map((w) => (
-          <div key={w.id} className="flex items-center justify-between rounded-[var(--radius-card)] px-2 py-2 text-sm">
-            <div>
-              <p className="font-mono text-xs text-paper-100">{w.target_url}</p>
-              <p className="text-xs text-paper-500">{w.events.join(", ")}</p>
-            </div>
-            <button onClick={() => deleteWebhook.mutate(w.id)} className="text-paper-500 hover:text-clay-400">
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
+          <WebhookRow key={w.id} webhook={w} onDelete={() => deleteWebhook.mutate(w.id)} />
         ))}
       </CardContent>
     </Card>
+  );
+}
+
+
+function WebhookRow({ webhook, onDelete }: { webhook: Webhook; onDelete: () => void }) {
+  const updateWebhook = useUpdateWebhook();
+  const [showDeliveries, setShowDeliveries] = useState(false);
+  const deliveriesQuery = useWebhookDeliveries(showDeliveries ? webhook.id : undefined);
+
+  return (
+    <div className="rounded-[var(--radius-card)] border border-line-700 px-3 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+        <div className="min-w-0">
+          <p className="break-all font-mono text-xs text-paper-100">{webhook.target_url}</p>
+          <p className="mt-1 text-xs text-paper-500">{webhook.events.join(", ")}</p>
+          <Badge variant={webhook.is_active ? "moss" : "neutral"} className="mt-2">
+            {webhook.is_active ? "Active" : "Paused"}
+          </Badge>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            loading={updateWebhook.isPending}
+            onClick={() => updateWebhook.mutate({ id: webhook.id, data: { is_active: !webhook.is_active } })}
+          >
+            {webhook.is_active ? "Pause" : "Activate"}
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setShowDeliveries((value) => !value)}>
+            {showDeliveries ? "Hide delivery history" : "Delivery history"}
+          </Button>
+          <Button size="sm" variant="danger" aria-label={"Delete webhook " + webhook.target_url} onClick={onDelete}>
+            <Trash2 className="h-4 w-4" /> Delete
+          </Button>
+        </div>
+      </div>
+      {showDeliveries && (
+        <div className="mt-3 border-t border-line-700 pt-3">
+          {deliveriesQuery.isLoading && <p className="text-xs text-paper-500">Loading delivery history…</p>}
+          {deliveriesQuery.isError && <p role="alert" className="text-xs text-clay-400">Delivery history could not be loaded.</p>}
+          {!deliveriesQuery.isLoading && !deliveriesQuery.isError && !deliveriesQuery.data?.length && (
+            <p className="text-xs text-paper-500">No delivery attempts yet.</p>
+          )}
+          {deliveriesQuery.data?.map((delivery) => (
+            <div key={delivery.id} className="flex items-center justify-between gap-3 py-2 text-xs">
+              <span className="text-paper-300">{delivery.event}</span>
+              <span className="text-paper-500">{delivery.response_status ?? "No response"}</span>
+              <Badge variant={delivery.success ? "moss" : "clay"}>{delivery.success ? "Succeeded" : "Failed"}</Badge>
+              <span className="text-paper-500">{formatDate(delivery.attempted_at)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
