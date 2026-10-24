@@ -204,7 +204,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await expect(page.getByText(projectName)).toBeVisible();
   await capture(page, "04-projects-list");
 
-  await page.getByText(projectName).click();
+  await page.getByRole("link", { name: projectName, exact: true }).click();
   await expect(page.getByRole("heading", { name: projectName })).toBeVisible();
   const updatedProjectResponse = await expectSuccessfulApiAction(
     page,
