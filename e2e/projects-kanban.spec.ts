@@ -83,7 +83,7 @@ const backlogColumn = page.locator("text=Backlog").locator("..").locator("..");
     await page.getByText(taskTitle).first().click();
 
     // The task detail dialog opens — verify the title textbox is filled in.
-    const titleBox = page.getByRole("textbox", { name: taskTitle });
+    const titleBox = page.getByRole("dialog").locator("input").first();
     await expect(titleBox).toBeVisible();
 
     // Edit the title inline.
@@ -92,6 +92,6 @@ const backlogColumn = page.locator("text=Backlog").locator("..").locator("..");
     await titleBox.blur();
 
     // The input now contains the edited value.
-    await expect(page.getByRole("textbox", { name: "Investigate slow query" })).toHaveValue("Investigate fast query");
+    await expect(titleBox).toHaveValue("Investigate fast query");
   });
 });

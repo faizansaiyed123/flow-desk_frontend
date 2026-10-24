@@ -271,7 +271,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   if (!downloadedPath) throw new Error("The attachment download did not produce a local file.");
   expect((await readFile(downloadedPath)).toString("utf8")).toBe(attachmentContent);
 
-  await expectSuccessfulApiAction(
+  const temporaryAttachmentResponse = await expectSuccessfulApiAction(
     page,
     "POST",
     "/attachments",
@@ -281,13 +281,13 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
       buffer: Buffer.from("Delete this real upload after verifying the delete endpoint.", "utf8"),
     }),
   );
+  const temporaryAttachment = await temporaryAttachmentResponse.json();
+  expect(temporaryAttachment.project_id).toBe(project.id);
   await expect(page.getByText("temporary-delete.txt")).toBeVisible();
   await expectSuccessfulApiAction(
     page,
     "DELETE",
-    "/attachments/" + (await page.getByText("temporary-delete.txt").evaluate((node) =>
-      node.closest("[data-attachment-id]")?.getAttribute("data-attachment-id") ?? ""
-    )),
+    "/attachments/" + temporaryAttachment.id,
     () => page.getByRole("button", { name: "Delete temporary-delete.txt" }).click(),
   );
   await expect(page.getByText("temporary-delete.txt")).not.toBeVisible();
