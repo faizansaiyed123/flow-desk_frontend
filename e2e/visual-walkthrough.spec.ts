@@ -309,7 +309,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   );
   const manualEntry = await manualTime.json();
   expect(manualEntry.duration_minutes).toBe(45);
-  await expect(page.getByText("Manual verification entry")).toBeVisible();
+  await expect(page.getByText("Manual verification entry", { exact: true })).toBeVisible();
   const updatedManualTime = await expectSuccessfulApiAction(
     page,
     "PATCH",
@@ -342,9 +342,9 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     () => page.getByRole("button", { name: /stop/i }).click(),
   );
   expect((await stoppedTimer.json()).ended_at).toBeTruthy();
-  await expect(page.getByText("Manual verification entry")).toBeVisible();
+  await expect(page.getByText("Manual verification entry edited", { exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByText("Manual verification entry")).toBeVisible();
+  await expect(page.getByText("Manual verification entry edited", { exact: true })).toBeVisible();
   await capture(page, "10-time-tracking-stopped-reloaded");
 
   // Invoice lifecycle: draft → sent → paid, followed by a fresh server read.
