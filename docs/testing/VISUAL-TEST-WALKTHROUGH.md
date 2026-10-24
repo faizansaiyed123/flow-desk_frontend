@@ -130,6 +130,8 @@ The project detail screen now has a **Files** tab. Select a real text file to up
 
 From **Time**, choose **Log time manually**, select the project, enter a date and time, set the duration to 45 minutes, and add a description. The test asserts that POST /api/v1/time-entries succeeds and returns the requested duration.
 
+The Time page now exposes an edit action for each unbilled entry. The walkthrough changes the description using the visible edit dialog, asserts PATCH /api/v1/time-entries/{entry_id} returns the updated value, and the direct PostgreSQL check verifies the edited description and 45-minute duration. Invoiced entries remain non-editable, consistent with the backend rule.
+
 ### Start and stop the running timer
 
 ![Running timer](visuals/09-time-tracking-running.png)
@@ -161,6 +163,12 @@ Select **Send**. The browser verifies the POST /api/v1/invoices/{invoice_id}/sen
 ![Paid invoice after reload](visuals/14-invoice-paid-reloaded.png)
 
 Select **Mark paid**, verify the API response, reload the invoice, and read its status from a fresh GET request. PostgreSQL verification checks the paid invoice row and its stored line item/amount.
+
+### Mark a past-due invoice overdue
+
+![Overdue invoice](visuals/14-overdue-invoice.png)
+
+The walkthrough creates a second invoice whose due date is seven days in the past, sends it, and uses the newly exposed **Mark overdue** action. The test checks the POST /api/v1/invoices/{invoice_id}/mark-overdue response and confirms PostgreSQL stores the invoice as `overdue` with the expected line item. The UI only exposes this action after an invoice is sent and its due date is before today.
 
 The existing invoicing tests also exercise API validation and lifecycle behavior. The UI E2E suite includes the restriction that a sent invoice cannot be edited.
 
@@ -234,8 +242,8 @@ The workflow runs the backend API suite, frontend unit tests, frontend lint and 
 | Client CRUD, notes, search, archive, delete, validation | Browser E2E + client API tests + SQL read-back | Pending CI run |
 | Project CRUD and filters | Browser E2E + project API tests | Pending CI run |
 | Task/Kanban CRUD, status, ordering, comments | Browser E2E + task API tests + SQL status check | Pending CI run |
-| Manual time, running timer, stopping timer | Browser E2E + time-entry API tests + SQL read-back | Pending CI run |
-| Invoice creation and lifecycle | Browser E2E + invoice API tests + SQL/line-item checks | Pending CI run |
+| Manual time, entry editing, running timer, stopping timer | Browser E2E + API response checks + SQL read-back | Pending CI run |
+| Invoice creation/editing, sent/paid/overdue lifecycle | Browser E2E + API response checks + SQL/line-item checks | Pending CI run |
 | Tenant membership and invitations | Browser E2E + tenant API tests + SQL invitation check | Pending CI run |
 | API-key creation/revocation and secret handling | Browser E2E + API-key API tests + SQL hash check | Pending CI run |
 | Webhook configuration and delivery logging | Browser configuration test + webhook API tests + SQL check | Pending CI run |
