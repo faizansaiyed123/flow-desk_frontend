@@ -396,6 +396,42 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await expect(page.locator('[aria-label="Invoice status: paid"]')).toBeVisible();
   await capture(page, "14-invoice-paid-reloaded");
 
+  // A past-due sent invoice can be explicitly transitioned to overdue.
+  await page.getByRole("link", { name: "Invoices" }).click();
+  await page.getByRole("button", { name: /new invoice/i }).click();
+  await page.getByLabel("Client").click();
+  await page.getByRole("option", { name: clientName }).click();
+  await page.getByLabel(/description/i).first().fill("Overdue walkthrough work");
+  await page.getByLabel(/quantity/i).first().fill("1");
+  await page.getByLabel(/unit price/i).first().fill("25");
+  const overdueDate = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
+  await page.getByLabel("Due date").fill(overdueDate);
+  const overdueDraftResponse = await expectSuccessfulApiAction(
+    page,
+    "POST",
+    "/invoices",
+    () => page.getByRole("button", { name: /create invoice/i }).click(),
+  );
+  const overdueDraft = await overdueDraftResponse.json();
+  expect(overdueDraft.status).toBe("draft");
+  expect(overdueDraft.due_date).toBe(overdueDate);
+  await expectSuccessfulApiAction(
+    page,
+    "POST",
+    "/invoices/" + overdueDraft.id + "/send",
+    () => page.getByRole("button", { name: /^send$/i }).click(),
+  );
+  await expect(page.getByRole("button", { name: "Mark overdue" })).toBeVisible();
+  const markedOverdue = await expectSuccessfulApiAction(
+    page,
+    "POST",
+    "/invoices/" + overdueDraft.id + "/mark-overdue",
+    () => page.getByRole("button", { name: "Mark overdue" }).click(),
+  );
+  expect((await markedOverdue.json()).status).toBe("overdue");
+  await expect(page.locator('[aria-label="Invoice status: overdue"]')).toBeVisible();
+  await capture(page, "14-overdue-invoice");
+
   // Settings: invitation, one-time API key, webhook. Never screenshot secrets.
   await page.getByRole("link", { name: "Settings" }).click();
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
