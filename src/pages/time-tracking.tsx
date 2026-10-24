@@ -183,12 +183,15 @@ export function TimeTrackingPage() {
           <form
             onSubmit={editForm.handleSubmit((values) => {
               if (!editingEntry) return;
+              const startedAt = new Date(values.started_at);
+              const endedAt = new Date(startedAt.getTime() + Number(values.duration_minutes) * 60_000);
               updateEntry.mutate(
                 {
                   id: editingEntry.id,
                   data: {
                     description: values.description || null,
-                    started_at: new Date(values.started_at).toISOString(),
+                    started_at: startedAt.toISOString(),
+                    ended_at: endedAt.toISOString(),
                     duration_minutes: Number(values.duration_minutes),
                     is_billable: values.is_billable,
                   },
@@ -247,7 +250,7 @@ export function TimeTrackingPage() {
                     {entry.is_invoiced ? <Badge variant="moss">Invoiced</Badge> : entry.is_billable ? <Badge variant="brass">Billable</Badge> : <Badge variant="neutral">Non-billable</Badge>}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {!entry.is_invoiced && (
+                    {!entry.is_invoiced && entry.ended_at && (
                       <div className="inline-flex items-center gap-2">
                         <button
                           aria-label={"Edit time entry " + (entry.description || formatDateTime(entry.started_at))}
