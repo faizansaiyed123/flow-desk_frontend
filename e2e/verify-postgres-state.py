@@ -149,6 +149,13 @@ try:
     )
 
     check(
+        "attachment deletion was recorded in the activity audit trail",
+        "SELECT EXISTS (SELECT 1 FROM activity_logs WHERE tenant_id = %s "
+        "AND entity_label = %s AND action = %s)",
+        (tenant_id, "temporary-delete.txt", "attachment.deleted"),
+    )
+
+    check(
         "file upload was recorded in workspace activity history",
         "SELECT EXISTS (SELECT 1 FROM activity_logs WHERE tenant_id = %s "
         "AND entity_label = %s AND action = %s)",
