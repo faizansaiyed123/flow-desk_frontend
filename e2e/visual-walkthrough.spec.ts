@@ -13,6 +13,19 @@ test("captures a real browser-to-API-to-PostgreSQL product walkthrough", async (
   // This suite uses the real Vite frontend, FastAPI backend, and ephemeral
   // PostgreSQL database configured by .github/workflows/full-stack-e2e.yml.
   // It deliberately does not install MSW or register any mocked API handlers.
+  await page.goto("/login");
+  await expect(page.getByRole("button", { name: "Log in" })).toBeVisible();
+  await capture(page, "00-login");
+  await page.getByRole("link", { name: /forgot password/i }).click();
+  await expect(page.getByRole("button", { name: "Send reset link" })).toBeVisible();
+  await capture(page, "00-forgot-password");
+  await page.goto("/reset-password");
+  await expect(page.getByText(/missing its reset token/i)).toBeVisible();
+  await capture(page, "00-invalid-reset-link");
+  await page.goto("/accept-invite");
+  await expect(page.getByRole("heading", { name: "Invalid invitation" })).toBeVisible();
+  await capture(page, "00-invalid-invitation");
+
   await page.goto("/register");
   await expect(page.getByRole("button", { name: "Create workspace" })).toBeVisible();
   await capture(page, "00-register");
