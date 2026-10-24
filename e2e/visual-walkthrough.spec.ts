@@ -574,44 +574,48 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await expect(page.getByText(revokeEmail)).not.toBeVisible();
   await capture(page, "17d-team-invitation-revoked");
 
-  await page.getByRole("tab", { name: /api keys/i }).click();
-  await page.getByRole("button", { name: /new key/i }).click();
-  await page.getByLabel("Name").fill("Walkthrough automation key");
+  // Keep the one-time API-key response outside the primary Playwright-traced context.
+  // This is still an authenticated real browser session against the same backend/database.
+  const apiKeyContext = await browser.newContext({ storageState: await page.context().storageState() });
+  const apiKeyPage = await apiKeyContext.newPage();
+  await apiKeyPage.goto("http://localhost:5173/app/settings");
+  await expect(apiKeyPage.getByRole("heading", { name: "Settings" })).toBeVisible();
+  await apiKeyPage.getByRole("tab", { name: /api keys/i }).click();
+  await apiKeyPage.getByRole("button", { name: /new key/i }).click();
+  await apiKeyPage.getByLabel("Name").fill("Walkthrough automation key");
   const apiKeyCreation = await expectSuccessfulApiAction(
-    page,
+    apiKeyPage,
     "POST",
     "/api-keys",
-    () => page.getByRole("button", { name: /generate key/i }).click(),
+    () => apiKeyPage.getByRole("button", { name: /generate key/i }).click(),
   );
-  // Read the response to ensure this was a real generated secret but never log or persist it.
   const apiKeyData = await apiKeyCreation.json();
   const apiKeyHasExpectedPrefix = typeof apiKeyData.plaintext_key === "string" && apiKeyData.plaintext_key.startsWith("fd_live_");
   const apiKeyHasId = typeof apiKeyData.id === "string" && apiKeyData.id.length > 0;
-  const apiKeyCopyHeading = page.getByRole("heading", { name: /copy your api key/i });
+  const apiKeyCopyHeading = apiKeyPage.getByRole("heading", { name: /copy your api key/i });
   await expect(apiKeyCopyHeading).toBeVisible();
-  const renderedSecret = page.getByRole("dialog").locator("code");
+  const renderedSecret = apiKeyPage.getByRole("dialog").locator("code");
   await expect(renderedSecret).toBeVisible();
-  // Mask the one-time key in the test DOM immediately, before any later assertion
-  // can capture it in a failure screenshot or trace snapshot.
+  // Mask the one-time key in this untraced test context too, before later actions.
   await renderedSecret.evaluate((node) => { node.textContent = "[REDACTED]"; });
   const apiKeyCopyDialogWasVisible = await apiKeyCopyHeading.isVisible();
-  await page.getByRole("button", { name: "Done" }).click();
-  // Validate only booleans after dismissing the one-time secret dialog.
+  await apiKeyPage.getByRole("button", { name: "Done" }).click();
   expect(apiKeyHasExpectedPrefix).toBe(true);
   expect(apiKeyHasId).toBe(true);
   expect(apiKeyCopyDialogWasVisible).toBe(true);
-  await expect(page.getByText("Walkthrough automation key", { exact: true })).toBeVisible();
-  await capture(page, "18-settings-api-keys");
-  const apiKeyRow = page.getByText("Walkthrough automation key", { exact: true }).locator("..").locator("..");
+  await expect(apiKeyPage.getByText("Walkthrough automation key", { exact: true })).toBeVisible();
+  await capture(apiKeyPage, "18-settings-api-keys");
+  const apiKeyRow = apiKeyPage.getByText("Walkthrough automation key", { exact: true }).locator("..").locator("..");
   const revokedApiKey = await expectSuccessfulApiAction(
-    page,
+    apiKeyPage,
     "DELETE",
     "/api-keys/" + apiKeyData.id,
     () => apiKeyRow.getByRole("button").click(),
   );
   expect((await revokedApiKey.json()).message).toMatch(/revoked/i);
   await expect(apiKeyRow.getByText("Revoked", { exact: true })).toBeVisible();
-  await capture(page, "18b-settings-api-key-revoked");
+  await capture(apiKeyPage, "18b-settings-api-key-revoked");
+  await apiKeyContext.close();
 
   await page.getByRole("tab", { name: "Webhooks" }).click();
   await page.getByRole("button", { name: /new webhook/i }).click();
