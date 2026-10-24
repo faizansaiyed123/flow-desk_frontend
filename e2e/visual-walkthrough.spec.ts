@@ -1,4 +1,4 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { test, expect, type Page } from "@playwright/test";
 import { uniqueEmail } from "./helpers";
 
@@ -39,7 +39,7 @@ async function expectSuccessfulApiAction(
   return response;
 }
 
-test("captures real FlowDesk browser actions, API responses, and persistent PostgreSQL records", async ({ page }) => {
+test("captures real FlowDesk browser actions, API responses, and persistent PostgreSQL records", async ({ page, browser }) => {
   test.setTimeout(600_000);
   // This test is deliberately not wired to MSW and has no route mocks:
   // Vite forwards /api to the actual FastAPI process and PostgreSQL database.
@@ -466,6 +466,100 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   expect((await invitation.json()).email).toBe(inviteEmail);
   await expect(page.getByText(inviteEmail)).toBeVisible();
   await capture(page, "17-settings-team-invitation");
+
+  // Create a second real invitation and use the token that the backend generated
+  // and logged in the disposable CI environment; no token or API response is mocked.
+  const acceptedInviteEmail = uniqueEmail();
+  const acceptedInvite = await expectSuccessfulApiAction(
+    page,
+    "POST",
+    "/tenants/invitations",
+    async () => {
+      await page.getByRole("button", { name: /invite/i }).click();
+      await page.getByLabel("Email").fill(acceptedInviteEmail);
+      await page.getByRole("button", { name: /send invitation/i }).click();
+    },
+  );
+  expect((await acceptedInvite.json()).email).toBe(acceptedInviteEmail);
+  const backendLogPath = process.env.BACKEND_LOG_PATH;
+  expect(backendLogPath).toBeTruthy();
+  const readInvitationToken = async () => {
+    const logText = await readFile(backendLogPath!, "utf8");
+    const emailOffset = logText.lastIndexOf("to=" + acceptedInviteEmail);
+    if (emailOffset < 0) return "";
+    const emailLog = logText.slice(emailOffset);
+    return emailLog.match(/Accept the invitation: http:\/\/localhost:5173\/accept-invite\?token=([A-Za-z0-9_-]+)/)?.[1] ?? "";
+  };
+  await expect.poll(readInvitationToken, { timeout: 15_000 }).not.toBe("");
+  const acceptedInviteToken = await readInvitationToken();
+
+  const inviteeContext = await browser.newContext();
+  const inviteePage = await inviteeContext.newPage();
+  await inviteePage.goto("http://localhost:5173/accept-invite?token=" + encodeURIComponent(acceptedInviteToken));
+  await expect(inviteePage.getByRole("heading", { name: /Join FlowDesk Visual Walkthrough/i })).toBeVisible();
+  await inviteePage.getByLabel("Your name").fill("FlowDesk Invited Member");
+  await inviteePage.getByLabel("Choose a password").fill("invitee-pass-123");
+  const accepted = await expectSuccessfulApiAction(
+    inviteePage,
+    "POST",
+    "/tenants/invitations/accept",
+    () => inviteePage.getByRole("button", { name: /create account & join/i }).click(),
+  );
+  expect(await accepted.json()).toHaveProperty("access_token");
+  await expect(inviteePage).toHaveURL(/\\/app\\/dashboard/);
+  await expect(inviteePage.getByText("Overview")).toBeVisible();
+  await capture(inviteePage, "17b-invitation-accepted");
+  await inviteeContext.close();
+
+  // Reload the owner workspace so the member list is fetched afresh from the API.
+  await page.reload();
+  const membersResponsePromise = page.waitForResponse((response) =>
+    response.request().method() === "GET" &&
+    new URL(response.url()).pathname === "/api/v1/tenants/members",
+  );
+  await page.getByRole("tab", { name: "Team" }).click();
+  const membersResponse = await membersResponsePromise;
+  expect(membersResponse.ok()).toBeTruthy();
+  const teamMembers = await membersResponse.json();
+  const acceptedMember = teamMembers.find((member: { user: { email: string }; membership_id: string }) =>
+    member.user.email === acceptedInviteEmail
+  );
+  expect(acceptedMember).toBeTruthy();
+  const acceptedMemberRow = page.getByText("FlowDesk Invited Member").locator("..").locator("..");
+  const memberRoleUpdate = page.waitForResponse((response) =>
+    response.request().method() === "PATCH" &&
+    new URL(response.url()).pathname === "/api/v1/tenants/members/" + acceptedMember.membership_id + "/role",
+  );
+  await acceptedMemberRow.getByRole("combobox").click();
+  await page.getByRole("option", { name: "Admin" }).click();
+  const roleUpdate = await memberRoleUpdate;
+  expect(roleUpdate.ok()).toBeTruthy();
+  await expect(acceptedMemberRow.getByRole("combobox")).toContainText("Admin");
+  await capture(page, "17c-team-member-role-updated");
+
+  // Revoke a separate invitation and verify the DELETE request is handled by the API.
+  const revokeEmail = "walkthrough-revoked@example.com";
+  const revocableInvite = await expectSuccessfulApiAction(
+    page,
+    "POST",
+    "/tenants/invitations",
+    async () => {
+      await page.getByRole("button", { name: /invite/i }).click();
+      await page.getByLabel("Email").fill(revokeEmail);
+      await page.getByRole("button", { name: /send invitation/i }).click();
+    },
+  );
+  const revocableInvitation = await revocableInvite.json();
+  const revocationRow = page.getByText(revokeEmail).locator("..").locator("..");
+  const revokeResponsePromise = page.waitForResponse((response) =>
+    response.request().method() === "DELETE" &&
+    new URL(response.url()).pathname === "/api/v1/tenants/invitations/" + revocableInvitation.id,
+  );
+  await revocationRow.getByRole("button", { name: "Revoke" }).click();
+  const revokeResponse = await revokeResponsePromise;
+  expect(revokeResponse.ok()).toBeTruthy();
+  await expect(page.getByText(revokeEmail)).not.toBeVisible();
+  await capture(page, "17d-team-invitation-revoked");
 
   await page.getByRole("tab", { name: /api keys/i }).click();
   await page.getByRole("button", { name: /new key/i }).click();
