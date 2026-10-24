@@ -107,7 +107,7 @@ export function ProjectDetailPage() {
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             <Pencil className="h-3.5 w-3.5" /> Edit
           </Button>
-          <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)}>
+          <Button variant="danger" size="sm" aria-label="Delete project" onClick={() => setDeleteOpen(true)}>
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
