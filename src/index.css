@@ -1,0 +1,103 @@
+@import "tailwindcss";
+@import "@fontsource/source-serif-4/400.css";
+@import "@fontsource/source-serif-4/600.css";
+@import "@fontsource/source-serif-4/700.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+
+/*
+  FlowDesk design identity: "The Ledger"
+  A professional services / billing tool should feel like a well-kept
+  account book, not a generic gradient-and-glassmorphism dashboard.
+  - Ink-dark surfaces with hairline borders instead of drop shadows.
+  - A warm brass accent (not the ubiquitous terracotta or neon-violet)
+    reserved for primary actions and the single most important figure
+    on a screen.
+  - Serif display type for headings (ledger/masthead feel), a clean
+    grotesk for UI text and a tabular-figures rule for every number
+    that represents money or time.
+*/
+@theme {
+  --font-display: "Source Serif 4", Georgia, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink-950: #10131a;
+  --color-ink-900: #171b23;
+  --color-ink-800: #1f2530;
+  --color-ink-700: #262d3a;
+  --color-ink-600: #323b4a;
+
+  --color-line-800: #262c38;
+  --color-line-700: #313947;
+  --color-line-600: #3d4759;
+
+  --color-paper-50: #f7f7f5;
+  --color-paper-100: #ececea;
+  --color-paper-300: #c7cbd4;
+  --color-paper-400: #98a0b0;
+  --color-paper-500: #78808f;
+
+  --color-brass-300: #e6c98a;
+  --color-brass-400: #d9ac5c;
+  --color-brass-500: #c6963e;
+  --color-brass-600: #a97a2c;
+  --color-brass-950: #2b2010;
+
+  --color-moss-400: #6bb586;
+  --color-moss-500: #4f9668;
+  --color-moss-950: #102117;
+
+  --color-clay-400: #dd8078;
+  --color-clay-500: #c1594f;
+  --color-clay-950: #260f0d;
+
+  --color-sky-400: #7fa3e0;
+  --color-sky-500: #5b87c9;
+  --color-sky-950: #0f1a2b;
+
+  --radius-card: 0.5rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-line-700);
+  }
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-ink-950 text-paper-100 antialiased;
+    font-family: var(--font-sans);
+  }
+  h1, h2, h3, h4, .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+  ::selection {
+    background: var(--color-brass-500);
+    color: var(--color-ink-950);
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-ink-700);
+    border-radius: 999px;
+    border: 2px solid var(--color-ink-950);
+  }
+}
+
+@layer utilities {
+  .focus-ring {
+    @apply outline-none ring-2 ring-brass-500/60 ring-offset-2 ring-offset-ink-950;
+  }
+}
