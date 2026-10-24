@@ -73,7 +73,7 @@ export function useUpdateTimeEntry() {
       id: string;
       data: { description?: string | null; started_at?: string; ended_at?: string | null; duration_minutes?: number | null; is_billable?: boolean };
     }) => api.patch<TimeEntry>(`/time-entries/${id}`, data),
-    onSuccess: (entry) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["time-entries"] });
       qc.invalidateQueries({ queryKey: ["timer"] });
       toast({ title: "Time entry updated", variant: "success" });
