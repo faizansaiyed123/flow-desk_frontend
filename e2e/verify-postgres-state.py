@@ -105,6 +105,20 @@ try:
     )
 
     check(
+        "accepted invite created the new team member with updated admin role",
+        "SELECT EXISTS (SELECT 1 FROM users u JOIN memberships m ON m.user_id = u.id "
+        "WHERE m.tenant_id = %s AND u.full_name = %s AND lower(m.role::text) = %s)",
+        (tenant_id, "FlowDesk Invited Member", "admin"),
+    )
+
+    check(
+        "revoked invitation status persisted",
+        "SELECT EXISTS (SELECT 1 FROM invitations WHERE tenant_id = %s AND email = %s "
+        "AND lower(status::text) = %s)",
+        (tenant_id, "walkthrough-revoked@example.com", "revoked"),
+    )
+
+    check(
         "API key record persisted without storing its plaintext value",
         "SELECT EXISTS (SELECT 1 FROM api_keys WHERE tenant_id = %s "
         "AND name = %s AND hashed_key IS NOT NULL AND length(hashed_key) > 20)",
