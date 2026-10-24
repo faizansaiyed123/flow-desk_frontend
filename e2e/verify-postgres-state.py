@@ -27,13 +27,19 @@ try:
     with connection.cursor() as cursor:
         cursor.execute(
             "SELECT id FROM tenants WHERE name = %s ORDER BY created_at DESC LIMIT 1",
-            ("FlowDesk Visual Walkthrough",),
+            ("FlowDesk Visual Walkthrough Updated",),
         )
         tenant_row = cursor.fetchone()
     if tenant_row is None:
         raise AssertionError("The walkthrough workspace was not found in PostgreSQL.")
     tenant_id = tenant_row[0]
     print("PASS PostgreSQL: registered workspace persisted")
+
+    check(
+        "workspace rename persisted",
+        "SELECT EXISTS (SELECT 1 FROM tenants WHERE id = %s AND name = %s)",
+        (tenant_id, "FlowDesk Visual Walkthrough Updated"),
+    )
 
     check(
         "profile change persisted to the member user row",
