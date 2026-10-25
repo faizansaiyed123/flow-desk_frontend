@@ -26,14 +26,23 @@ def check(label: str, sql: str, parameters: tuple = ()) -> None:
 try:
     with connection.cursor() as cursor:
         cursor.execute(
-            "SELECT id FROM tenants WHERE name = %s ORDER BY created_at DESC LIMIT 1",
-            ("FlowDesk Visual Walkthrough Updated",),
+            "SELECT id, name, slug FROM tenants WHERE slug = %s ORDER BY created_at DESC LIMIT 1",
+            ("flowdesk-visual-walkthrough",),
         )
         tenant_row = cursor.fetchone()
     if tenant_row is None:
-        raise AssertionError("The walkthrough workspace was not found in PostgreSQL.")
-    tenant_id = tenant_row[0]
-    print("PASS PostgreSQL: registered workspace persisted")
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT name, slug FROM tenants ORDER BY created_at DESC LIMIT 10")
+            observed_tenants = cursor.fetchall()
+        raise AssertionError(
+            "The registered workspace slug was not found in PostgreSQL; "
+            f"observed tenant name/slug pairs: {observed_tenants!r}"
+        )
+    tenant_id, persisted_tenant_name, persisted_tenant_slug = tenant_row
+    print(
+        "PASS PostgreSQL: registered workspace located by stable slug "
+        f"{persisted_tenant_slug!r}; current persisted name is {persisted_tenant_name!r}"
+    )
 
     check(
         "workspace rename persisted",
