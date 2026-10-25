@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, useWatch, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -56,7 +56,6 @@ export function ProjectCreateDialog({
     handleSubmit,
     reset,
     control,
-    watch,
     formState: { errors },
   } = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
@@ -72,7 +71,7 @@ export function ProjectCreateDialog({
       fixed_budget: "",
     },
   });
-  const billingType = watch("billing_type");
+  const billingType = useWatch({ control, name: "billing_type" });
 
   useEffect(() => {
     if (open) reset();
