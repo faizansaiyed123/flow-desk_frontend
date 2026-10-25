@@ -591,7 +591,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "POST",
     "/tenants/invitations",
     async () => {
-      await page.getByRole("button", { name: /invite/i }).click();
+      await page.getByRole("button", { name: "Invite", exact: true }).click();
       await page.getByLabel("Email").fill(inviteEmail);
       await page.getByRole("button", { name: /send invitation/i }).click();
     },
@@ -608,7 +608,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "POST",
     "/tenants/invitations",
     async () => {
-      await page.getByRole("button", { name: /invite/i }).click();
+      await page.getByRole("button", { name: "Invite", exact: true }).click();
       await page.getByLabel("Email").fill(acceptedInviteEmail);
       await page.getByRole("button", { name: /send invitation/i }).click();
     },
@@ -677,7 +677,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "POST",
     "/tenants/invitations",
     async () => {
-      await page.getByRole("button", { name: /invite/i }).click();
+      await page.getByRole("button", { name: "Invite", exact: true }).click();
       await page.getByLabel("Email").fill(revokeEmail);
       await page.getByRole("button", { name: /send invitation/i }).click();
     },
@@ -693,6 +693,73 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   expect(revokeResponse.ok()).toBeTruthy();
   await expect(page.getByText(revokeEmail)).not.toBeVisible();
   await capture(page, "17d-team-invitation-revoked");
+
+  // Add a separate real workspace member so member-removal does not remove the
+  // invited admin used below for task assignment/notification read-state coverage.
+  const removalMemberEmail = "walkthrough-member-to-remove@example.com";
+  const removalInvite = await expectSuccessfulApiAction(
+    page,
+    "POST",
+    "/tenants/invitations",
+    async () => {
+      await page.getByRole("button", { name: "Invite", exact: true }).click();
+      await page.getByLabel("Email").fill(removalMemberEmail);
+      await page.getByRole("button", { name: /send invitation/i }).click();
+    },
+  );
+  expect((await removalInvite.json()).email).toBe(removalMemberEmail);
+
+  const readRemovalInviteToken = async () => {
+    const logText = await readFile(backendLogPath!, "utf8");
+    const emailOffset = logText.lastIndexOf("to=" + removalMemberEmail);
+    if (emailOffset < 0) return "";
+    const emailLog = logText.slice(emailOffset);
+    return emailLog.match(/Accept the invitation: http:\/\/localhost:5173\/accept-invite\?token=([A-Za-z0-9_-]+)/)?.[1] ?? "";
+  };
+  await expect.poll(readRemovalInviteToken, { timeout: 15_000 }).not.toBe("");
+  const removalInviteToken = await readRemovalInviteToken();
+  const removalMemberContext = await browser.newContext();
+  const removalMemberPage = await removalMemberContext.newPage();
+  await removalMemberPage.goto("http://localhost:5173/accept-invite?token=" + encodeURIComponent(removalInviteToken));
+  await expect(removalMemberPage.getByRole("heading", { name: /Join FlowDesk Visual Walkthrough/i })).toBeVisible();
+  await removalMemberPage.getByLabel("Your name").fill("FlowDesk Member To Remove");
+  await removalMemberPage.getByLabel("Choose a password").fill("remove-member-pass-123");
+  const acceptedRemovalMember = await expectSuccessfulApiAction(
+    removalMemberPage,
+    "POST",
+    "/tenants/invitations/accept",
+    () => removalMemberPage.getByRole("button", { name: /create account & join/i }).click(),
+  );
+  expect(await acceptedRemovalMember.json()).toHaveProperty("access_token");
+  await expect(removalMemberPage).toHaveURL(/dashboard$/);
+  await removalMemberContext.close();
+
+  // Verify the new membership via a fresh GET, then remove it through the Team UI.
+  await page.reload();
+  const refreshedMembersPromise = page.waitForResponse((response) =>
+    response.request().method() === "GET" &&
+    new URL(response.url()).pathname === "/api/v1/tenants/members",
+  );
+  await page.getByRole("tab", { name: "Team" }).click();
+  const refreshedMembersResponse = await refreshedMembersPromise;
+  expect(refreshedMembersResponse.ok()).toBeTruthy();
+  const refreshedMembers = await refreshedMembersResponse.json();
+  const memberToRemove = refreshedMembers.find(
+    (member: { membership_id: string; user: { email: string } }) =>
+      member.user.email === removalMemberEmail,
+  );
+  if (!memberToRemove) throw new Error("Accepted removal-test invitation did not create a membership.");
+  const memberToRemoveRow = page.getByText("FlowDesk Member To Remove", { exact: true }).locator("..").locator("..");
+  await expect(memberToRemoveRow).toBeVisible();
+  const removeMemberResponse = await expectSuccessfulApiAction(
+    page,
+    "DELETE",
+    "/tenants/members/" + memberToRemove.membership_id,
+    () => memberToRemoveRow.getByRole("button", { name: "Remove FlowDesk Member To Remove", exact: true }).click(),
+  );
+  expect((await removeMemberResponse.json()).message).toMatch(/member removed/i);
+  await expect(memberToRemoveRow).not.toBeVisible();
+  await capture(page, "17e-team-member-removed");
 
   // Keep the one-time API-key response outside the primary Playwright-traced context.
   // This is still an authenticated real browser session against the same backend/database.
