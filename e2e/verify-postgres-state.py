@@ -169,6 +169,13 @@ try:
     )
 
     check(
+        "removed workspace member no longer has a membership",
+        "SELECT NOT EXISTS (SELECT 1 FROM users u JOIN memberships m ON m.user_id = u.id "
+        "WHERE m.tenant_id = %s AND u.email = %s)",
+        (tenant_id, "walkthrough-member-to-remove@example.com"),
+    )
+
+    check(
         "revoked invitation status persisted",
         "SELECT EXISTS (SELECT 1 FROM invitations WHERE tenant_id = %s AND email = %s "
         "AND lower(status::text) = %s)",

@@ -184,7 +184,7 @@ function TeamTab() {
                     <SelectItem value="viewer">Viewer</SelectItem>
                   </SelectContent>
                 </Select>
-                <button onClick={() => removeMember.mutate(m.membership_id)} className="text-paper-500 hover:text-clay-400">
+                <button aria-label={`Remove ${m.user.full_name}`} onClick={() => removeMember.mutate(m.membership_id)} className="text-paper-500 hover:text-clay-400">
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>

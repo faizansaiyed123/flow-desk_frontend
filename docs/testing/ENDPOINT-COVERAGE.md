@@ -35,7 +35,7 @@ This file is the endpoint-level companion to [the visual full-stack walkthrough]
 | PATCH | `/api/v1/tenants/current` | Rename/update workspace; admin/owner permission rules |
 | GET | `/api/v1/tenants/members` | List real workspace members |
 | PATCH | `/api/v1/tenants/members/{membership_id}/role` | Change member role; authorization and owner safeguards |
-| DELETE | `/api/v1/tenants/members/{membership_id}` | Remove member; cannot remove the last owner |
+| DELETE | `/api/v1/tenants/members/{membership_id}` | Browser accepts a second real invitation then removes that non-owner member through the Team UI; PostgreSQL checks the membership row is gone; backend tests cover owner/self-removal safeguards |
 | POST | `/api/v1/tenants/invitations` | Create invite from Settings; invitation row and pending state |
 | GET | `/api/v1/tenants/invitations` | List pending invitations |
 | DELETE | `/api/v1/tenants/invitations/{invitation_id}` | Revoke invitation |
