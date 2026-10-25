@@ -1,0 +1,57 @@
+name: Remediate npm security advisories
+
+on:
+  push:
+    branches:
+      - fix/vite-security-advisory
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/remediate-vite-audit.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  remediate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the isolated dependency-fix branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/vite-security-advisory
+          persist-credentials: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install the existing locked dependency tree
+        run: npm ci
+
+      - name: Apply compatible security fixes
+        run: npm audit fix
+
+      - name: Fail if high-severity advisories remain
+        run: npm audit --audit-level=high
+
+      - name: Revalidate frontend code
+        run: |
+          npm run lint
+          npm run build
+          npm test
+
+      - name: Commit the generated package lock update
+        if: success()
+        run: |
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "No dependency-file changes were required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "fix: update vulnerable npm dependencies"
+          git push origin HEAD:fix/vite-security-advisory
