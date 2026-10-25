@@ -76,6 +76,12 @@ try:
     print("PASS PostgreSQL: project persisted")
 
     check(
+        "disposable project was removed after the delete confirmation",
+        "SELECT NOT EXISTS (SELECT 1 FROM projects WHERE tenant_id = %s AND name = %s)",
+        (tenant_id, "Project lifecycle cleanup"),
+    )
+
+    check(
         "task status persisted after changing the Kanban column",
         "SELECT EXISTS (SELECT 1 FROM tasks WHERE tenant_id = %s AND project_id = %s "
         "AND title = %s AND lower(status::text) = %s)",
@@ -104,6 +110,13 @@ try:
     )
 
     check(
+        "temporary time entry was deleted from PostgreSQL",
+        "SELECT NOT EXISTS (SELECT 1 FROM time_entries WHERE tenant_id = %s "
+        "AND project_id = %s AND description = %s)",
+        (tenant_id, project_id, "Temporary time entry to delete"),
+    )
+
+    check(
         "invoice, edited notes, total and paid status persisted",
         "SELECT EXISTS (SELECT 1 FROM invoices i JOIN clients c ON c.id = i.client_id "
         "WHERE i.tenant_id = %s AND c.name = %s AND lower(i.status::text) = %s "
@@ -116,6 +129,13 @@ try:
         "SELECT EXISTS (SELECT 1 FROM invoice_line_items li JOIN invoices i ON i.id = li.invoice_id "
         "WHERE i.tenant_id = %s AND li.description = %s AND li.quantity = %s AND li.unit_price = %s)",
         (tenant_id, "Walkthrough implementation", 2, 50),
+    )
+
+    check(
+        "disposable draft invoice was deleted from PostgreSQL",
+        "SELECT NOT EXISTS (SELECT 1 FROM invoices i JOIN invoice_line_items li "
+        "ON li.invoice_id = i.id WHERE i.tenant_id = %s AND li.description = %s)",
+        (tenant_id, "Disposable draft invoice"),
     )
 
     check(
