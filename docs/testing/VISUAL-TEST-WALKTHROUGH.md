@@ -330,7 +330,7 @@ The workflow runs the backend API suite, frontend unit tests, frontend lint and 
 | Task/Kanban CRUD, status, ordering, comments | Browser E2E + task API tests + SQL status check | Passed in successful full-stack CI run |
 | Manual time, entry editing, running timer, stopping timer | Browser E2E + API response checks + SQL read-back | Passed in successful full-stack CI run |
 | Invoice creation/editing, sent/paid/overdue lifecycle | Browser E2E + API response checks + SQL/line-item checks | Passed in successful full-stack CI run |
-| Tenant membership, invitation acceptance, role update, member removal and invitation revocation | Real browser/API flows + SQL membership/role/invitation checks | Pending rerun for member-removal addition |
+| Tenant membership, invitation acceptance, role update, member removal and invitation revocation | Real browser/API flows + SQL membership/role/invitation checks | Passed in latest full-stack CI run |
 | API-key creation/revocation and secret handling | Browser E2E + API-key API tests + SQL hash check | Passed in successful full-stack CI run |
 | Webhook configuration and delivery logging | Browser configuration test + webhook API tests + SQL check | Passed in successful full-stack CI run |
 | Global search and tenant isolation | Browser E2E + backend search/activity tests | Passed in successful full-stack CI run |
