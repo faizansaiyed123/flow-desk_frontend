@@ -89,7 +89,7 @@ This file is the endpoint-level companion to [the visual full-stack walkthrough]
 |---|---|---|
 | GET | `/api/v1/notifications` | Notification menu and empty/non-empty list |
 | GET | `/api/v1/notifications/unread-count` | Header unread indicator |
-| POST | `/api/v1/notifications/{notification_id}/read` | Browser clicks a real task-assignment notification, checks the PATCH/POST response and valid project navigation, and verifies `is_read` in PostgreSQL |
+| POST | `/api/v1/notifications/{notification_id}/read` | Browser clicks a real task-assignment notification, checks the POST response and valid project navigation, and verifies `is_read` in PostgreSQL |
 | POST | `/api/v1/notifications/read-all` | Browser marks a second real task-assignment notification read; SQL confirms both individual and bulk transitions persisted |
 
 ### Time tracking — `tests/test_time_entries.py`
