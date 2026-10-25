@@ -591,7 +591,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "POST",
     "/tenants/invitations",
     async () => {
-      await page.getByRole("button", { name: /invite/i }).click();
+      await page.getByRole("button", { name: "Invite", exact: true }).click();
       await page.getByLabel("Email").fill(inviteEmail);
       await page.getByRole("button", { name: /send invitation/i }).click();
     },
@@ -608,7 +608,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "POST",
     "/tenants/invitations",
     async () => {
-      await page.getByRole("button", { name: /invite/i }).click();
+      await page.getByRole("button", { name: "Invite", exact: true }).click();
       await page.getByLabel("Email").fill(acceptedInviteEmail);
       await page.getByRole("button", { name: /send invitation/i }).click();
     },
@@ -677,7 +677,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "POST",
     "/tenants/invitations",
     async () => {
-      await page.getByRole("button", { name: /invite/i }).click();
+      await page.getByRole("button", { name: "Invite", exact: true }).click();
       await page.getByLabel("Email").fill(revokeEmail);
       await page.getByRole("button", { name: /send invitation/i }).click();
     },
@@ -702,7 +702,7 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "POST",
     "/tenants/invitations",
     async () => {
-      await page.getByRole("button", { name: /invite/i }).click();
+      await page.getByRole("button", { name: "Invite", exact: true }).click();
       await page.getByLabel("Email").fill(removalMemberEmail);
       await page.getByRole("button", { name: /send invitation/i }).click();
     },
