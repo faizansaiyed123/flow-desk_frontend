@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { Plus, Trash2, Copy, Check } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -294,10 +294,10 @@ function WebhooksTab() {
   const createWebhook = useCreateWebhook();
   const deleteWebhook = useDeleteWebhook();
   const [createOpen, setCreateOpen] = useState(false);
-  const { register, handleSubmit, reset, watch, setValue } = useForm({
+  const { register, handleSubmit, reset, control, setValue } = useForm({
     defaultValues: { target_url: "", events: [] as string[] },
   });
-  const selectedEvents = watch("events");
+  const selectedEvents = useWatch({ control, name: "events" });
 
   function toggleEvent(event: string) {
     setValue("events", selectedEvents.includes(event) ? selectedEvents.filter((e) => e !== event) : [...selectedEvents, event]);
