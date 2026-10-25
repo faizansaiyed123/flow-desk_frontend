@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { api } from "@/lib/api-client";
 import { decodeTenantIdFromToken, useAuthStore } from "@/stores/auth-store";
-import type { MeResponse } from "@/types/api";
+import type { MeResponse, User } from "@/types/api";
 import { toast } from "@/stores/toast-store";
 
 interface TokenPair {
@@ -17,6 +17,28 @@ export function useMe() {
     queryFn: () => api.get<MeResponse>("/auth/me"),
     enabled: isAuthenticated,
     staleTime: 60_000,
+  });
+}
+
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { full_name?: string; avatar_url?: string | null }) =>
+      api.patch<User>("/users/me", data),
+    onSuccess: (user) => {
+      queryClient.setQueryData<MeResponse>(["me"], (current) =>
+        current
+          ? {
+              ...current,
+              user,
+              memberships: current.memberships.map((membership) => ({ ...membership, user })),
+            }
+          : current,
+      );
+      toast({ title: "Profile updated", variant: "success" });
+    },
+    onError: (error: Error) =>
+      toast({ title: "Couldn't update profile", description: error.message, variant: "error" }),
   });
 }
 

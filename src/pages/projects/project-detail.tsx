@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { ArrowLeft, Pencil, Receipt, Trash2 } from "lucide-react";
 import { useProject, useUpdateProject, useDeleteProject } from "@/hooks/use-projects";
+import { useClients } from "@/hooks/use-clients";
 import { useTimeEntries } from "@/hooks/use-time-entries";
 import { useGenerateInvoiceFromTime } from "@/hooks/use-invoices";
 import { KanbanBoard } from "@/components/kanban-board";
+import { ProjectAttachments } from "@/components/project-attachments";
 import { TaskDetailDialog } from "@/components/task-detail-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,8 +16,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { formatCurrency, formatDateTime, formatMinutes } from "@/lib/format";
+
+type ProjectEditFormValues = {
+  name: string;
+  description: string;
+  client_id: string;
+  billing_type: "hourly" | "fixed" | "non_billable";
+  hourly_rate: string;
+  fixed_budget: string;
+};
 
 const STATUS_LABEL: Record<string, string> = {
   planning: "Planning", active: "Active", on_hold: "On hold", completed: "Completed", archived: "Archived",
@@ -25,6 +37,8 @@ export function ProjectDetailPage() {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { data: project, isLoading } = useProject(projectId);
+  const { data: clientPage } = useClients({ include_archived: true });
+  const clients = clientPage?.items ?? [];
   const updateProject = useUpdateProject(projectId!);
   const deleteProject = useDeleteProject();
   const { data: timeEntries } = useTimeEntries({ project_id: projectId });
@@ -34,9 +48,17 @@ export function ProjectDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const { register, handleSubmit } = useForm({
-    values: project ? { name: project.name, description: project.description ?? "" } : undefined,
+  const { register, handleSubmit, control, watch } = useForm<ProjectEditFormValues>({
+    values: project ? {
+      name: project.name,
+      description: project.description ?? "",
+      client_id: project.client_id ?? "none",
+      billing_type: project.billing_type,
+      hourly_rate: project.hourly_rate === null ? "" : String(project.hourly_rate),
+      fixed_budget: project.fixed_budget === null ? "" : String(project.fixed_budget),
+    } : undefined,
   });
+  const editBillingType = watch("billing_type");
 
   if (isLoading || !project) {
     return <div className="h-64 animate-pulse rounded-[var(--radius-card)] bg-ink-900" />;
@@ -60,6 +82,9 @@ export function ProjectDetailPage() {
             <Badge variant="neutral" className="capitalize">{STATUS_LABEL[project.status]}</Badge>
           </div>
           {project.client_name && <p className="mt-1 text-sm text-paper-500">{project.client_name}</p>}
+          {project.billing_type === "hourly" && project.client_id && project.hourly_rate === null && unbilledMinutes > 0 && (
+            <p className="mt-1 text-xs text-clay-400">Set an hourly rate before invoicing this project's unbilled time.</p>
+          )}
         </div>
         <div className="flex gap-2">
           {project.billing_type === "hourly" && project.client_id && (
@@ -82,7 +107,7 @@ export function ProjectDetailPage() {
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             <Pencil className="h-3.5 w-3.5" /> Edit
           </Button>
-          <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)}>
+          <Button variant="danger" size="sm" aria-label="Delete project" onClick={() => setDeleteOpen(true)}>
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
@@ -99,6 +124,7 @@ export function ProjectDetailPage() {
         <TabsList className="mb-4">
           <TabsTrigger value="board">Board</TabsTrigger>
           <TabsTrigger value="time">Time</TabsTrigger>
+          <TabsTrigger value="files">Files</TabsTrigger>
         </TabsList>
         <TabsContent value="board">
           <KanbanBoard projectId={project.id} onOpenTask={setOpenTaskId} />
@@ -138,6 +164,9 @@ export function ProjectDetailPage() {
             </table>
           </div>
         </TabsContent>
+        <TabsContent value="files">
+          <ProjectAttachments projectId={project.id} />
+        </TabsContent>
       </Tabs>
 
       {openTaskId && (
@@ -152,15 +181,73 @@ export function ProjectDetailPage() {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>Edit project</DialogTitle></DialogHeader>
-          <form onSubmit={handleSubmit((v) => updateProject.mutate(v, { onSuccess: () => setEditOpen(false) }))} className="space-y-4" noValidate>
+          <form
+            onSubmit={handleSubmit((values) => updateProject.mutate({
+              name: values.name,
+              description: values.description,
+              client_id: values.client_id === "none" ? null : values.client_id,
+              billing_type: values.billing_type,
+              hourly_rate: values.hourly_rate.trim() === "" ? null : Number(values.hourly_rate),
+              fixed_budget: values.fixed_budget.trim() === "" ? null : Number(values.fixed_budget),
+            }, { onSuccess: () => setEditOpen(false) }))}
+            className="space-y-4"
+            noValidate
+          >
             <div>
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" {...register("name")} />
+              <Label htmlFor="project-edit-name">Name</Label>
+              <Input id="project-edit-name" {...register("name")} />
             </div>
             <div>
-              <Label htmlFor="description">Description</Label>
-              <Input id="description" {...register("description")} />
+              <Label htmlFor="project-edit-description">Description</Label>
+              <Input id="project-edit-description" {...register("description")} />
             </div>
+            <div>
+              <Label htmlFor="project-edit-client">Client</Label>
+              <Controller
+                control={control}
+                name="client_id"
+                render={({ field }) => (
+                  <Select value={field.value ?? "none"} onValueChange={field.onChange}>
+                    <SelectTrigger id="project-edit-client" aria-label="Client"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No client</SelectItem>
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div>
+              <Label htmlFor="project-edit-billing-type">Billing type</Label>
+              <Controller
+                control={control}
+                name="billing_type"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger id="project-edit-billing-type" aria-label="Billing type"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hourly">Hourly</SelectItem>
+                      <SelectItem value="fixed">Fixed budget</SelectItem>
+                      <SelectItem value="non_billable">Non-billable</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            {editBillingType === "hourly" && (
+              <div>
+                <Label htmlFor="project-edit-hourly-rate">Hourly rate</Label>
+                <Input id="project-edit-hourly-rate" type="number" min="0" step="0.01" {...register("hourly_rate")} />
+              </div>
+            )}
+            {editBillingType === "fixed" && (
+              <div>
+                <Label htmlFor="project-edit-fixed-budget">Fixed budget</Label>
+                <Input id="project-edit-fixed-budget" type="number" min="0" step="0.01" {...register("fixed_budget")} />
+              </div>
+            )}
             <DialogFooter>
               <Button type="submit" loading={updateProject.isPending}>Save changes</Button>
             </DialogFooter>

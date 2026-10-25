@@ -29,6 +29,29 @@ export function useCreateManualInvoice() {
   });
 }
 
+export function useUpdateInvoice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: {
+      id: string;
+      data: {
+        issue_date?: string;
+        due_date?: string;
+        tax_rate?: number;
+        notes?: string | null;
+        line_items?: Array<{ description: string; quantity: number; unit_price: number }>;
+      };
+    }) => api.patch<Invoice>(`/invoices/${id}`, data),
+    onSuccess: (invoice) => {
+      qc.setQueryData(["invoices", invoice.id], invoice);
+      qc.invalidateQueries({ queryKey: ["invoices"] });
+      toast({ title: "Draft invoice updated", variant: "success" });
+    },
+    onError: (error: Error) =>
+      toast({ title: "Couldn't update invoice", description: error.message, variant: "error" }),
+  });
+}
+
 export function useGenerateInvoiceFromTime() {
   const qc = useQueryClient();
   return useMutation({

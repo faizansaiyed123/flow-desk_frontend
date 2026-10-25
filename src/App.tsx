@@ -26,6 +26,7 @@ const TimeTrackingPage = lazy(() => import("@/pages/time-tracking").then((m) => 
 const InvoicesPage = lazy(() => import("@/pages/invoices/invoices-list").then((m) => ({ default: m.InvoicesPage })));
 const InvoiceDetailPage = lazy(() => import("@/pages/invoices/invoice-detail").then((m) => ({ default: m.InvoiceDetailPage })));
 const SettingsPage = lazy(() => import("@/pages/settings/settings").then((m) => ({ default: m.SettingsPage })));
+const ActivityPage = lazy(() => import("@/pages/activity").then((m) => ({ default: m.ActivityPage })));
 
 function PageFallback() {
   return <div className="h-64 animate-pulse rounded-[var(--radius-card)] bg-ink-900" />;
@@ -53,6 +54,7 @@ export default function App() {
             >
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<Suspense fallback={<PageFallback />}><DashboardPage /></Suspense>} />
+              <Route path="activity" element={<Suspense fallback={<PageFallback />}><ActivityPage /></Suspense>} />
               <Route path="clients" element={<Suspense fallback={<PageFallback />}><ClientsPage /></Suspense>} />
               <Route path="clients/:clientId" element={<Suspense fallback={<PageFallback />}><ClientDetailPage /></Suspense>} />
               <Route path="projects" element={<Suspense fallback={<PageFallback />}><ProjectsPage /></Suspense>} />

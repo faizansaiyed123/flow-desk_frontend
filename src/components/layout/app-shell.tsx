@@ -7,6 +7,7 @@ import {
   Clock,
   Receipt,
   Settings,
+  History,
   Search,
   Bell,
   ChevronsUpDown,
@@ -36,6 +37,7 @@ import type { Membership } from "@/types/api";
 
 const NAV_ITEMS = [
   { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/app/activity", label: "Activity", icon: History },
   { to: "/app/clients", label: "Clients", icon: Users },
   { to: "/app/projects", label: "Projects", icon: FolderKanban },
   { to: "/app/time", label: "Time", icon: Clock },
