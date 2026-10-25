@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, useWatch, Controller } from "react-hook-form";
 import { ArrowLeft, Pencil, Receipt, Trash2 } from "lucide-react";
 import { useProject, useUpdateProject, useDeleteProject } from "@/hooks/use-projects";
 import { useClients } from "@/hooks/use-clients";
@@ -48,7 +48,7 @@ export function ProjectDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const { register, handleSubmit, control, watch } = useForm<ProjectEditFormValues>({
+  const { register, handleSubmit, control } = useForm<ProjectEditFormValues>({
     values: project ? {
       name: project.name,
       description: project.description ?? "",
@@ -58,7 +58,7 @@ export function ProjectDetailPage() {
       fixed_budget: project.fixed_budget === null ? "" : String(project.fixed_budget),
     } : undefined,
   });
-  const editBillingType = watch("billing_type");
+  const editBillingType = useWatch({ control, name: "billing_type" });
 
   if (isLoading || !project) {
     return <div className="h-64 animate-pulse rounded-[var(--radius-card)] bg-ink-900" />;

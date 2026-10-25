@@ -27,12 +27,18 @@ export function InvoicesPage() {
   const createInvoice = useCreateManualInvoice();
   const navigate = useNavigate();
 
+  const [invoiceFormDefaults] = useState(() => {
+    const today = new Date();
+    return {
+      client_id: "",
+      issue_date: today.toISOString().slice(0, 10),
+      due_date: new Date(today.getTime() + 30 * 86400000).toISOString().slice(0, 10),
+      tax_rate: 0,
+      line_items: [{ description: "", quantity: 1, unit_price: 0 }],
+    };
+  });
   const { register, handleSubmit, control, reset } = useForm({
-    defaultValues: {
-      client_id: "", issue_date: new Date().toISOString().slice(0, 10),
-      due_date: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
-      tax_rate: 0, line_items: [{ description: "", quantity: 1, unit_price: 0 }],
-    },
+    defaultValues: invoiceFormDefaults,
   });
   const { fields, append, remove } = useFieldArray({ control, name: "line_items" });
 
