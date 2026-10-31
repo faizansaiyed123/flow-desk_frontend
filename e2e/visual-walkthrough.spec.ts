@@ -312,7 +312,12 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   const attachment = await attachmentResponse.json();
   expect(attachment.file_name).toBe("walkthrough-evidence.txt");
   expect(attachment.project_id).toBe(project.id);
-  await expect(page.getByText("walkthrough-evidence.txt")).toBeVisible();
+  const attachmentRow = page.locator(
+    '[data-attachment-id="' + attachment.id + '"]',
+  );
+  await expect(
+    attachmentRow.getByText(attachment.file_name, { exact: true }),
+  ).toBeVisible();
 
   // Content-Disposition makes Chromium treat the response as a download, so
   // verify the saved browser download rather than reading response.body() (which
@@ -323,8 +328,10 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "GET",
     "/attachments/" + attachment.id + "/download",
     () =>
-      page
-        .getByRole("button", { name: "Download walkthrough-evidence.txt" })
+      attachmentRow
+        .getByRole("button", {
+          name: "Download " + attachment.file_name,
+        })
         .click(),
   );
   expect(attachmentDownload.status()).toBe(200);
