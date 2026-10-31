@@ -3,10 +3,13 @@ import { api } from "@/lib/api-client";
 import type { Page, TimeEntry } from "@/types/api";
 import { toast } from "@/stores/toast-store";
 
-export function useTimeEntries(params: { project_id?: string; user_id?: string; is_invoiced?: boolean } = {}) {
+export function useTimeEntries(
+  params: { project_id?: string; user_id?: string; is_invoiced?: boolean } = {},
+) {
   return useQuery({
     queryKey: ["time-entries", params],
-    queryFn: () => api.get<Page<TimeEntry>>("/time-entries", { ...params, page_size: 50 }),
+    queryFn: () =>
+      api.get<Page<TimeEntry>>("/time-entries", { ...params, page_size: 50 }),
   });
 }
 
@@ -21,13 +24,21 @@ export function useRunningTimer() {
 export function useStartTimer() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { project_id: string; task_id?: string; description?: string }) =>
-      api.post<TimeEntry>("/time-entries/timer/start", data),
+    mutationFn: (data: {
+      project_id: string;
+      task_id?: string;
+      description?: string;
+    }) => api.post<TimeEntry>("/time-entries/timer/start", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["timer"] });
       toast({ title: "Timer started", variant: "success" });
     },
-    onError: (e: Error) => toast({ title: "Couldn't start timer", description: e.message, variant: "error" }),
+    onError: (e: Error) =>
+      toast({
+        title: "Couldn't start timer",
+        description: e.message,
+        variant: "error",
+      }),
   });
 }
 
@@ -46,8 +57,9 @@ export function useStopTimer() {
 export function useCreateTimeEntry() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Partial<TimeEntry> & { project_id: string; started_at: string }) =>
-      api.post<TimeEntry>("/time-entries", data),
+    mutationFn: (
+      data: Partial<TimeEntry> & { project_id: string; started_at: string },
+    ) => api.post<TimeEntry>("/time-entries", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["time-entries"] });
       toast({ title: "Time entry logged", variant: "success" });
@@ -69,9 +81,18 @@ export function useDeleteTimeEntry() {
 export function useUpdateTimeEntry() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: {
+    mutationFn: ({
+      id,
+      data,
+    }: {
       id: string;
-      data: { description?: string | null; started_at?: string; ended_at?: string | null; duration_minutes?: number | null; is_billable?: boolean };
+      data: {
+        description?: string | null;
+        started_at?: string;
+        ended_at?: string | null;
+        duration_minutes?: number | null;
+        is_billable?: boolean;
+      };
     }) => api.patch<TimeEntry>(`/time-entries/${id}`, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["time-entries"] });
@@ -79,6 +100,10 @@ export function useUpdateTimeEntry() {
       toast({ title: "Time entry updated", variant: "success" });
     },
     onError: (error: Error) =>
-      toast({ title: "Couldn't update time entry", description: error.message, variant: "error" }),
+      toast({
+        title: "Couldn't update time entry",
+        description: error.message,
+        variant: "error",
+      }),
   });
 }

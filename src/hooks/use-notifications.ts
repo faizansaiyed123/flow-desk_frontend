@@ -5,7 +5,11 @@ import type { NotificationItem, Page } from "@/types/api";
 export function useNotifications(unreadOnly = false) {
   return useQuery({
     queryKey: ["notifications", unreadOnly],
-    queryFn: () => api.get<Page<NotificationItem>>("/notifications", { unread_only: unreadOnly, page_size: 20 }),
+    queryFn: () =>
+      api.get<Page<NotificationItem>>("/notifications", {
+        unread_only: unreadOnly,
+        page_size: 20,
+      }),
   });
 }
 

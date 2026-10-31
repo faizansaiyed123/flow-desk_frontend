@@ -17,13 +17,15 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
       currentTenantId: null,
-      setTokens: (access, refresh) => set({ accessToken: access, refreshToken: refresh }),
+      setTokens: (access, refresh) =>
+        set({ accessToken: access, refreshToken: refresh }),
       setCurrentTenant: (tenantId) => set({ currentTenantId: tenantId }),
-      logout: () => set({ accessToken: null, refreshToken: null, currentTenantId: null }),
+      logout: () =>
+        set({ accessToken: null, refreshToken: null, currentTenantId: null }),
       isAuthenticated: () => Boolean(get().accessToken),
     }),
-    { name: "flowdesk-auth" }
-  )
+    { name: "flowdesk-auth" },
+  ),
 );
 
 /** Decode the tenant_id claim baked into a JWT access token without a

@@ -10,11 +10,24 @@ export function ActivityPage() {
 
   return (
     <div>
-      <PageHeader title="Activity" subtitle="A workspace-scoped timeline of recent changes." />
-      {isLoading && <div className="h-48 animate-pulse rounded-[var(--radius-card)] bg-ink-900" />}
-      {isError && <p role="alert" className="text-sm text-clay-400">Activity could not be loaded. Please try again.</p>}
+      <PageHeader
+        title="Activity"
+        subtitle="A workspace-scoped timeline of recent changes."
+      />
+      {isLoading && (
+        <div className="h-48 animate-pulse rounded-[var(--radius-card)] bg-ink-900" />
+      )}
+      {isError && (
+        <p role="alert" className="text-sm text-clay-400">
+          Activity could not be loaded. Please try again.
+        </p>
+      )}
       {!isLoading && !isError && data?.length === 0 && (
-        <EmptyState icon={Activity} title="No activity yet" description="Changes to clients, projects, tasks, and invoices will appear here." />
+        <EmptyState
+          icon={Activity}
+          title="No activity yet"
+          description="Changes to clients, projects, tasks, and invoices will appear here."
+        />
       )}
       {!isLoading && !isError && Boolean(data?.length) && (
         <div className="space-y-2">
@@ -26,11 +39,15 @@ export function ActivityPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="break-words text-sm text-paper-100">
-                    <span className="capitalize">{entry.action.replace(/[._]/g, " ")}</span>
+                    <span className="capitalize">
+                      {entry.action.replace(/[._]/g, " ")}
+                    </span>
                     {" · "}
                     {entry.entity_label ?? entry.entity_type}
                   </p>
-                  <p className="mt-1 text-xs text-paper-500">{entry.entity_type} · {formatRelativeTime(entry.created_at)}</p>
+                  <p className="mt-1 text-xs text-paper-500">
+                    {entry.entity_type} · {formatRelativeTime(entry.created_at)}
+                  </p>
                 </div>
                 <Clock3 className="h-4 w-4 shrink-0 text-paper-500" />
               </CardContent>

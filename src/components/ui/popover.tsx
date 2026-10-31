@@ -3,11 +3,15 @@ import * as PopoverPrimitive from "@radix-ui/react-popover";
 
 import { cn } from "@/lib/utils";
 
-function Popover({ ...props }: React.ComponentProps<typeof PopoverPrimitive.Popover>) {
+function Popover({
+  ...props
+}: React.ComponentProps<typeof PopoverPrimitive.Popover>) {
   return <PopoverPrimitive.Popover {...props} />;
 }
 
-function PopoverTrigger({ ...props }: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {
+function PopoverTrigger({
+  ...props
+}: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {
   return <PopoverPrimitive.Trigger {...props} />;
 }
 
@@ -32,7 +36,7 @@ function PopoverContent({
           "z-50 w-72 rounded-[var(--radius-card)] border border-line-700 bg-ink-900 p-3 text-paper-100 shadow-xl outline-none",
           "data-[side=bottom]:translate-y-1 data-[side=top]:translate-y-[-1px]",
           "data-[state=open]:animate-in data-[state=closed]:animate-out",
-          className
+          className,
         )}
         {...props}
       />

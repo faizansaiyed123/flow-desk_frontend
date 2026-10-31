@@ -6,7 +6,8 @@ import { toast } from "@/stores/toast-store";
 export function useAttachments(projectId: string | undefined) {
   return useQuery({
     queryKey: ["attachments", projectId],
-    queryFn: () => api.get<Attachment[]>("/attachments", { project_id: projectId }),
+    queryFn: () =>
+      api.get<Attachment[]>("/attachments", { project_id: projectId }),
     enabled: Boolean(projectId),
   });
 }
@@ -25,10 +26,18 @@ export function useUploadAttachment(projectId: string) {
     onSuccess: (attachment) => {
       queryClient.invalidateQueries({ queryKey: ["attachments", projectId] });
       queryClient.invalidateQueries({ queryKey: ["activity"] });
-      toast({ title: "File uploaded", description: attachment.file_name, variant: "success" });
+      toast({
+        title: "File uploaded",
+        description: attachment.file_name,
+        variant: "success",
+      });
     },
     onError: (error: Error) => {
-      toast({ title: "Couldn't upload file", description: error.message, variant: "error" });
+      toast({
+        title: "Couldn't upload file",
+        description: error.message,
+        variant: "error",
+      });
     },
   });
 }
@@ -36,14 +45,19 @@ export function useUploadAttachment(projectId: string) {
 export function useDeleteAttachment(projectId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (attachmentId: string) => api.delete("/attachments/" + attachmentId),
+    mutationFn: (attachmentId: string) =>
+      api.delete("/attachments/" + attachmentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["attachments", projectId] });
       queryClient.invalidateQueries({ queryKey: ["activity"] });
       toast({ title: "Attachment deleted", variant: "success" });
     },
     onError: (error: Error) => {
-      toast({ title: "Couldn't delete attachment", description: error.message, variant: "error" });
+      toast({
+        title: "Couldn't delete attachment",
+        description: error.message,
+        variant: "error",
+      });
     },
   });
 }

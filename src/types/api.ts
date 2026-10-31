@@ -75,7 +75,12 @@ export interface ClientWithStats extends Client {
   total_outstanding: number;
 }
 
-export type ProjectStatus = "planning" | "active" | "on_hold" | "completed" | "archived";
+export type ProjectStatus =
+  | "planning"
+  | "active"
+  | "on_hold"
+  | "completed"
+  | "archived";
 export type BillingType = "hourly" | "fixed" | "non_billable";
 
 export interface Project {
@@ -103,7 +108,12 @@ export interface ProjectWithStats extends Project {
   total_billable_amount: number;
 }
 
-export type TaskStatus = "backlog" | "todo" | "in_progress" | "in_review" | "done";
+export type TaskStatus =
+  | "backlog"
+  | "todo"
+  | "in_progress"
+  | "in_review"
+  | "done";
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
 
 export interface Task {

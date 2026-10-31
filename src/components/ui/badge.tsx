@@ -15,13 +15,17 @@ const badgeVariants = cva(
       },
     },
     defaultVariants: { variant: "neutral" },
-  }
+  },
 );
 
-export interface BadgeProps extends HTMLAttributes<HTMLSpanElement>, VariantProps<typeof badgeVariants> {}
+export interface BadgeProps
+  extends HTMLAttributes<HTMLSpanElement>,
+    VariantProps<typeof badgeVariants> {}
 
 export function Badge({ className, variant, ...props }: BadgeProps) {
-  return <span className={cn(badgeVariants({ variant }), className)} {...props} />;
+  return (
+    <span className={cn(badgeVariants({ variant }), className)} {...props} />
+  );
 }
 
 /** A small solid dot + label — used for status where a full pill would be
@@ -29,7 +33,10 @@ export function Badge({ className, variant, ...props }: BadgeProps) {
 export function StatusDot({ color, label }: { color: string; label: string }) {
   return (
     <span className="inline-flex items-center gap-1.5 text-xs text-paper-300">
-      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
+      <span
+        className="h-1.5 w-1.5 rounded-full"
+        style={{ backgroundColor: color }}
+      />
       {label}
     </span>
   );

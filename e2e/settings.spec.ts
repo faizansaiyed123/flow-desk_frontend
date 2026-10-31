@@ -1,7 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { uniqueEmail, uniqueName } from "./helpers";
 
-async function registerAndLogin(page: import("@playwright/test").Page, workspaceName: string) {
+async function registerAndLogin(
+  page: import("@playwright/test").Page,
+  workspaceName: string,
+) {
   await page.goto("/register");
   await page.getByLabel("Your name").fill("Test User");
   await page.getByLabel("Workspace name").fill(workspaceName);
@@ -12,7 +15,9 @@ async function registerAndLogin(page: import("@playwright/test").Page, workspace
 }
 
 test.describe("Team and settings", () => {
-  test("owner can invite a team member and see the pending invitation", async ({ page }) => {
+  test("owner can invite a team member and see the pending invitation", async ({
+    page,
+  }) => {
     await registerAndLogin(page, uniqueName("Team Co"));
     await page.getByRole("link", { name: "Settings" }).click();
     await page.getByRole("tab", { name: "Team" }).click();
@@ -26,7 +31,9 @@ test.describe("Team and settings", () => {
     await expect(page.getByText("pending", { exact: false })).toBeVisible();
   });
 
-  test("API key can be created and shows its plaintext value once", async ({ page }) => {
+  test("API key can be created and shows its plaintext value once", async ({
+    page,
+  }) => {
     await registerAndLogin(page, uniqueName("API Key Co"));
     await page.getByRole("link", { name: "Settings" }).click();
     await page.getByRole("tab", { name: "API keys" }).click();
@@ -36,7 +43,9 @@ test.describe("Team and settings", () => {
     await page.getByRole("button", { name: /generate.*key/i }).click();
 
     // The plaintext key is shown once, inside the "Copy your API key" dialog.
-    await expect(page.getByRole("heading", { name: /copy your api key/i })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /copy your api key/i }),
+    ).toBeVisible();
     await expect(page.getByRole("dialog").getByText(/fd_live_/)).toBeVisible();
   });
 });

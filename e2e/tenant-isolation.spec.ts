@@ -15,9 +15,17 @@ async function registerInNewContext(browser: Browser, workspaceName: string) {
 }
 
 test.describe("Multi-tenant isolation", () => {
-  test("workspace A's clients never appear for workspace B", async ({ browser }) => {
-    const { page: pageA, context: contextA } = await registerInNewContext(browser, uniqueName("Tenant A"));
-    const { page: pageB, context: contextB } = await registerInNewContext(browser, uniqueName("Tenant B"));
+  test("workspace A's clients never appear for workspace B", async ({
+    browser,
+  }) => {
+    const { page: pageA, context: contextA } = await registerInNewContext(
+      browser,
+      uniqueName("Tenant A"),
+    );
+    const { page: pageB, context: contextB } = await registerInNewContext(
+      browser,
+      uniqueName("Tenant B"),
+    );
 
     await pageA.getByRole("link", { name: "Clients" }).click();
     const secretClientName = uniqueName("Tenant A Secret Client");
@@ -34,10 +42,18 @@ test.describe("Multi-tenant isolation", () => {
     await contextB.close();
   });
 
-  test("global search only returns results from the current workspace", async ({ browser }) => {
+  test("global search only returns results from the current workspace", async ({
+    browser,
+  }) => {
     const uniqueTerm = uniqueName("Unfindable");
-    const { page: pageA, context: contextA } = await registerInNewContext(browser, uniqueName("Search Tenant A"));
-    const { page: pageB, context: contextB } = await registerInNewContext(browser, uniqueName("Search Tenant B"));
+    const { page: pageA, context: contextA } = await registerInNewContext(
+      browser,
+      uniqueName("Search Tenant A"),
+    );
+    const { page: pageB, context: contextB } = await registerInNewContext(
+      browser,
+      uniqueName("Search Tenant B"),
+    );
 
     await pageA.getByRole("link", { name: "Clients" }).click();
     await pageA.getByRole("button", { name: "New client" }).click();

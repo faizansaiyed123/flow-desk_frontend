@@ -3,10 +3,15 @@ import { api } from "@/lib/api-client";
 import type { Client, ClientWithStats, Page } from "@/types/api";
 import { toast } from "@/stores/toast-store";
 
-export function useClients(params: { search?: string; include_archived?: boolean; page?: number }) {
+export function useClients(params: {
+  search?: string;
+  include_archived?: boolean;
+  page?: number;
+}) {
   return useQuery({
     queryKey: ["clients", params],
-    queryFn: () => api.get<Page<Client>>("/clients", { ...params, page_size: 20 }),
+    queryFn: () =>
+      api.get<Page<Client>>("/clients", { ...params, page_size: 20 }),
   });
 }
 
@@ -32,7 +37,8 @@ export function useCreateClient() {
 export function useUpdateClient(id: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Partial<Client>) => api.patch<Client>(`/clients/${id}`, data),
+    mutationFn: (data: Partial<Client>) =>
+      api.patch<Client>(`/clients/${id}`, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clients"] });
       toast({ title: "Client updated", variant: "success" });
@@ -48,7 +54,12 @@ export function useDeleteClient() {
       qc.invalidateQueries({ queryKey: ["clients"] });
       toast({ title: "Client deleted", variant: "success" });
     },
-    onError: (e: Error) => toast({ title: "Couldn't delete client", description: e.message, variant: "error" }),
+    onError: (e: Error) =>
+      toast({
+        title: "Couldn't delete client",
+        description: e.message,
+        variant: "error",
+      }),
   });
 }
 
@@ -61,6 +72,11 @@ export function useArchiveClient() {
       qc.invalidateQueries({ queryKey: ["clients", id] });
       toast({ title: "Client archived", variant: "success" });
     },
-    onError: (e: Error) => toast({ title: "Couldn't archive client", description: e.message, variant: "error" }),
+    onError: (e: Error) =>
+      toast({
+        title: "Couldn't archive client",
+        description: e.message,
+        variant: "error",
+      }),
   });
 }

@@ -1,7 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { uniqueEmail, uniqueName } from "./helpers";
 
-async function registerAndLogin(page: import("@playwright/test").Page, workspaceName: string) {
+async function registerAndLogin(
+  page: import("@playwright/test").Page,
+  workspaceName: string,
+) {
   await page.goto("/register");
   await page.getByLabel("Your name").fill("Test User");
   await page.getByLabel("Workspace name").fill(workspaceName);
@@ -39,7 +42,9 @@ test.describe("Clients", () => {
 
     // Archive.
     await page.getByRole("button", { name: /archive/i }).click();
-    await expect(page.getByRole("button", { name: /unarchive/i })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /unarchive/i }),
+    ).toBeVisible();
 
     // Delete.
     await page.getByRole("button", { name: "Delete" }).click();
@@ -48,7 +53,9 @@ test.describe("Clients", () => {
     await expect(page.getByText(clientName)).not.toBeVisible();
   });
 
-  test("shows a validation error when creating a client without a name", async ({ page }) => {
+  test("shows a validation error when creating a client without a name", async ({
+    page,
+  }) => {
     await registerAndLogin(page, uniqueName("Validation Co"));
     await page.getByRole("link", { name: "Clients" }).click();
     await page.getByRole("button", { name: "New client" }).click();
@@ -72,7 +79,9 @@ test.describe("Clients", () => {
     await expect(page.getByText("Alpha Corp")).not.toBeVisible();
   });
 
-  test("empty state appears for a brand-new workspace with no clients", async ({ page }) => {
+  test("empty state appears for a brand-new workspace with no clients", async ({
+    page,
+  }) => {
     await registerAndLogin(page, uniqueName("Empty Co"));
     await page.getByRole("link", { name: "Clients" }).click();
     await expect(page.getByText("No clients yet")).toBeVisible();

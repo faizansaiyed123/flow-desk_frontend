@@ -3,10 +3,13 @@ import { api } from "@/lib/api-client";
 import type { Invoice, InvoiceSummary, Page } from "@/types/api";
 import { toast } from "@/stores/toast-store";
 
-export function useInvoices(params: { status?: string; client_id?: string } = {}) {
+export function useInvoices(
+  params: { status?: string; client_id?: string } = {},
+) {
   return useQuery({
     queryKey: ["invoices", params],
-    queryFn: () => api.get<Page<InvoiceSummary>>("/invoices", { ...params, page_size: 50 }),
+    queryFn: () =>
+      api.get<Page<InvoiceSummary>>("/invoices", { ...params, page_size: 50 }),
   });
 }
 
@@ -32,14 +35,21 @@ export function useCreateManualInvoice() {
 export function useUpdateInvoice() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: {
+    mutationFn: ({
+      id,
+      data,
+    }: {
       id: string;
       data: {
         issue_date?: string;
         due_date?: string;
         tax_rate?: number;
         notes?: string | null;
-        line_items?: Array<{ description: string; quantity: number; unit_price: number }>;
+        line_items?: Array<{
+          description: string;
+          quantity: number;
+          unit_price: number;
+        }>;
       };
     }) => api.patch<Invoice>(`/invoices/${id}`, data),
     onSuccess: (invoice) => {
@@ -48,25 +58,44 @@ export function useUpdateInvoice() {
       toast({ title: "Draft invoice updated", variant: "success" });
     },
     onError: (error: Error) =>
-      toast({ title: "Couldn't update invoice", description: error.message, variant: "error" }),
+      toast({
+        title: "Couldn't update invoice",
+        description: error.message,
+        variant: "error",
+      }),
   });
 }
 
 export function useGenerateInvoiceFromTime() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { project_id: string; issue_date: string; due_date: string; tax_rate?: number; notes?: string }) =>
-      api.post<Invoice>("/invoices/generate-from-time", data),
+    mutationFn: (data: {
+      project_id: string;
+      issue_date: string;
+      due_date: string;
+      tax_rate?: number;
+      notes?: string;
+    }) => api.post<Invoice>("/invoices/generate-from-time", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["invoices"] });
       qc.invalidateQueries({ queryKey: ["time-entries"] });
-      toast({ title: "Invoice generated from time entries", variant: "success" });
+      toast({
+        title: "Invoice generated from time entries",
+        variant: "success",
+      });
     },
-    onError: (e: Error) => toast({ title: "Couldn't generate invoice", description: e.message, variant: "error" }),
+    onError: (e: Error) =>
+      toast({
+        title: "Couldn't generate invoice",
+        description: e.message,
+        variant: "error",
+      }),
   });
 }
 
-function useInvoiceAction(action: "send" | "mark-paid" | "void" | "mark-overdue") {
+function useInvoiceAction(
+  action: "send" | "mark-paid" | "void" | "mark-overdue",
+) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api.post<Invoice>(`/invoices/${id}/${action}`),
@@ -75,7 +104,12 @@ function useInvoiceAction(action: "send" | "mark-paid" | "void" | "mark-overdue"
       qc.invalidateQueries({ queryKey: ["invoices", id] });
       toast({ title: "Invoice updated", variant: "success" });
     },
-    onError: (e: Error) => toast({ title: "Couldn't update invoice", description: e.message, variant: "error" }),
+    onError: (e: Error) =>
+      toast({
+        title: "Couldn't update invoice",
+        description: e.message,
+        variant: "error",
+      }),
   });
 }
 
@@ -92,6 +126,11 @@ export function useDeleteInvoice() {
       qc.invalidateQueries({ queryKey: ["invoices"] });
       toast({ title: "Invoice deleted", variant: "success" });
     },
-    onError: (e: Error) => toast({ title: "Couldn't delete invoice", description: e.message, variant: "error" }),
+    onError: (e: Error) =>
+      toast({
+        title: "Couldn't delete invoice",
+        description: e.message,
+        variant: "error",
+      }),
   });
 }

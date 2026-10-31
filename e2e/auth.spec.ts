@@ -2,7 +2,9 @@ import { test, expect } from "@playwright/test";
 import { uniqueEmail, uniqueName } from "./helpers";
 
 test.describe("Authentication", () => {
-  test("a new user can register and lands on the dashboard", async ({ page }) => {
+  test("a new user can register and lands on the dashboard", async ({
+    page,
+  }) => {
     await page.goto("/register");
 
     await page.getByLabel("Your name").fill("Ada Lovelace");
@@ -58,7 +60,9 @@ test.describe("Authentication", () => {
     await expect(page.getByText(/incorrect email or password/i)).toBeVisible();
   });
 
-  test("redirects an unauthenticated user away from a protected page", async ({ page }) => {
+  test("redirects an unauthenticated user away from a protected page", async ({
+    page,
+  }) => {
     await page.goto("/app/clients");
     await expect(page).toHaveURL(/\/login/);
   });

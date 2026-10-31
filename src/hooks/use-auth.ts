@@ -31,14 +31,21 @@ export function useUpdateProfile() {
           ? {
               ...current,
               user,
-              memberships: current.memberships.map((membership) => ({ ...membership, user })),
+              memberships: current.memberships.map((membership) => ({
+                ...membership,
+                user,
+              })),
             }
           : current,
       );
       toast({ title: "Profile updated", variant: "success" });
     },
     onError: (error: Error) =>
-      toast({ title: "Couldn't update profile", description: error.message, variant: "error" }),
+      toast({
+        title: "Couldn't update profile",
+        description: error.message,
+        variant: "error",
+      }),
   });
 }
 
@@ -48,8 +55,12 @@ export function useRegister() {
   const setCurrentTenant = useAuthStore((s) => s.setCurrentTenant);
 
   return useMutation({
-    mutationFn: (data: { full_name: string; email: string; password: string; workspace_name: string }) =>
-      api.post<TokenPair>("/auth/register", data),
+    mutationFn: (data: {
+      full_name: string;
+      email: string;
+      password: string;
+      workspace_name: string;
+    }) => api.post<TokenPair>("/auth/register", data),
     onSuccess: (data) => {
       setTokens(data.access_token, data.refresh_token);
       const tenantId = decodeTenantIdFromToken(data.access_token);
@@ -65,7 +76,8 @@ export function useLogin() {
   const setCurrentTenant = useAuthStore((s) => s.setCurrentTenant);
 
   return useMutation({
-    mutationFn: (data: { email: string; password: string }) => api.post<TokenPair>("/auth/login", data),
+    mutationFn: (data: { email: string; password: string }) =>
+      api.post<TokenPair>("/auth/login", data),
     onSuccess: (data) => {
       setTokens(data.access_token, data.refresh_token);
       const tenantId = decodeTenantIdFromToken(data.access_token);
@@ -81,7 +93,8 @@ export function useSwitchTenant() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (tenantId: string) => api.post<TokenPair>("/auth/switch-tenant", { tenant_id: tenantId }),
+    mutationFn: (tenantId: string) =>
+      api.post<TokenPair>("/auth/switch-tenant", { tenant_id: tenantId }),
     onSuccess: (data) => {
       setTokens(data.access_token, data.refresh_token);
       const tenantId = decodeTenantIdFromToken(data.access_token);
@@ -105,7 +118,8 @@ export function useLogout() {
 
 export function useForgotPassword() {
   return useMutation({
-    mutationFn: (email: string) => api.post<{ message: string }>("/auth/forgot-password", { email }),
+    mutationFn: (email: string) =>
+      api.post<{ message: string }>("/auth/forgot-password", { email }),
   });
 }
 
@@ -115,7 +129,11 @@ export function useResetPassword() {
     mutationFn: (data: { token: string; new_password: string }) =>
       api.post<{ message: string }>("/auth/reset-password", data),
     onSuccess: () => {
-      toast({ title: "Password reset", description: "You can now log in.", variant: "success" });
+      toast({
+        title: "Password reset",
+        description: "You can now log in.",
+        variant: "success",
+      });
       navigate("/login");
     },
   });

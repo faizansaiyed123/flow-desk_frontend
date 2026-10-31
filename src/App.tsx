@@ -18,19 +18,57 @@ import { AcceptInvitePage } from "@/pages/auth/accept-invite";
 // (dashboard) and dnd-kit (Kanban board) are the two heaviest dependencies
 // in the app, and neither is needed until a user actually logs in — this
 // keeps the public auth pages' bundle small and defers the rest.
-const DashboardPage = lazy(() => import("@/pages/dashboard").then((m) => ({ default: m.DashboardPage })));
-const ClientsPage = lazy(() => import("@/pages/clients/clients-list").then((m) => ({ default: m.ClientsPage })));
-const ClientDetailPage = lazy(() => import("@/pages/clients/client-detail").then((m) => ({ default: m.ClientDetailPage })));
-const ProjectsPage = lazy(() => import("@/pages/projects/projects-list").then((m) => ({ default: m.ProjectsPage })));
-const ProjectDetailPage = lazy(() => import("@/pages/projects/project-detail").then((m) => ({ default: m.ProjectDetailPage })));
-const TimeTrackingPage = lazy(() => import("@/pages/time-tracking").then((m) => ({ default: m.TimeTrackingPage })));
-const InvoicesPage = lazy(() => import("@/pages/invoices/invoices-list").then((m) => ({ default: m.InvoicesPage })));
-const InvoiceDetailPage = lazy(() => import("@/pages/invoices/invoice-detail").then((m) => ({ default: m.InvoiceDetailPage })));
-const SettingsPage = lazy(() => import("@/pages/settings/settings").then((m) => ({ default: m.SettingsPage })));
-const ActivityPage = lazy(() => import("@/pages/activity").then((m) => ({ default: m.ActivityPage })));
+const DashboardPage = lazy(() =>
+  import("@/pages/dashboard").then((m) => ({ default: m.DashboardPage })),
+);
+const ClientsPage = lazy(() =>
+  import("@/pages/clients/clients-list").then((m) => ({
+    default: m.ClientsPage,
+  })),
+);
+const ClientDetailPage = lazy(() =>
+  import("@/pages/clients/client-detail").then((m) => ({
+    default: m.ClientDetailPage,
+  })),
+);
+const ProjectsPage = lazy(() =>
+  import("@/pages/projects/projects-list").then((m) => ({
+    default: m.ProjectsPage,
+  })),
+);
+const ProjectDetailPage = lazy(() =>
+  import("@/pages/projects/project-detail").then((m) => ({
+    default: m.ProjectDetailPage,
+  })),
+);
+const TimeTrackingPage = lazy(() =>
+  import("@/pages/time-tracking").then((m) => ({
+    default: m.TimeTrackingPage,
+  })),
+);
+const InvoicesPage = lazy(() =>
+  import("@/pages/invoices/invoices-list").then((m) => ({
+    default: m.InvoicesPage,
+  })),
+);
+const InvoiceDetailPage = lazy(() =>
+  import("@/pages/invoices/invoice-detail").then((m) => ({
+    default: m.InvoiceDetailPage,
+  })),
+);
+const SettingsPage = lazy(() =>
+  import("@/pages/settings/settings").then((m) => ({
+    default: m.SettingsPage,
+  })),
+);
+const ActivityPage = lazy(() =>
+  import("@/pages/activity").then((m) => ({ default: m.ActivityPage })),
+);
 
 function PageFallback() {
-  return <div className="h-64 animate-pulse rounded-[var(--radius-card)] bg-ink-900" />;
+  return (
+    <div className="h-64 animate-pulse rounded-[var(--radius-card)] bg-ink-900" />
+  );
 }
 
 export default function App() {
@@ -55,19 +93,92 @@ export default function App() {
               }
             >
               <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<Suspense fallback={<PageFallback />}><DashboardPage /></Suspense>} />
-              <Route path="activity" element={<Suspense fallback={<PageFallback />}><ActivityPage /></Suspense>} />
-              <Route path="clients" element={<Suspense fallback={<PageFallback />}><ClientsPage /></Suspense>} />
-              <Route path="clients/:clientId" element={<Suspense fallback={<PageFallback />}><ClientDetailPage /></Suspense>} />
-              <Route path="projects" element={<Suspense fallback={<PageFallback />}><ProjectsPage /></Suspense>} />
-              <Route path="projects/:projectId" element={<Suspense fallback={<PageFallback />}><ProjectDetailPage /></Suspense>} />
-              <Route path="time" element={<Suspense fallback={<PageFallback />}><TimeTrackingPage /></Suspense>} />
-              <Route path="invoices" element={<Suspense fallback={<PageFallback />}><InvoicesPage /></Suspense>} />
-              <Route path="invoices/:invoiceId" element={<Suspense fallback={<PageFallback />}><InvoiceDetailPage /></Suspense>} />
-              <Route path="settings" element={<Suspense fallback={<PageFallback />}><SettingsPage /></Suspense>} />
+              <Route
+                path="dashboard"
+                element={
+                  <Suspense fallback={<PageFallback />}>
+                    <DashboardPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="activity"
+                element={
+                  <Suspense fallback={<PageFallback />}>
+                    <ActivityPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="clients"
+                element={
+                  <Suspense fallback={<PageFallback />}>
+                    <ClientsPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="clients/:clientId"
+                element={
+                  <Suspense fallback={<PageFallback />}>
+                    <ClientDetailPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="projects"
+                element={
+                  <Suspense fallback={<PageFallback />}>
+                    <ProjectsPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="projects/:projectId"
+                element={
+                  <Suspense fallback={<PageFallback />}>
+                    <ProjectDetailPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="time"
+                element={
+                  <Suspense fallback={<PageFallback />}>
+                    <TimeTrackingPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="invoices"
+                element={
+                  <Suspense fallback={<PageFallback />}>
+                    <InvoicesPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="invoices/:invoiceId"
+                element={
+                  <Suspense fallback={<PageFallback />}>
+                    <InvoiceDetailPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="settings"
+                element={
+                  <Suspense fallback={<PageFallback />}>
+                    <SettingsPage />
+                  </Suspense>
+                }
+              />
             </Route>
 
-            <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
+            <Route
+              path="*"
+              element={<Navigate to="/app/dashboard" replace />}
+            />
           </Routes>
         </BrowserRouter>
         <Toaster />

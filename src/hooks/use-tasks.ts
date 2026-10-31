@@ -22,7 +22,8 @@ export function useTask(id: string | undefined) {
 export function useCreateTask(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Partial<Task> & { project_id: string; title: string }) => api.post<Task>("/tasks", data),
+    mutationFn: (data: Partial<Task> & { project_id: string; title: string }) =>
+      api.post<Task>("/tasks", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["kanban", projectId] });
       qc.invalidateQueries({ queryKey: ["projects", projectId] });
@@ -34,7 +35,8 @@ export function useCreateTask(projectId: string) {
 export function useUpdateTask(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Task> }) => api.patch<Task>(`/tasks/${id}`, data),
+    mutationFn: ({ id, data }: { id: string; data: Partial<Task> }) =>
+      api.patch<Task>(`/tasks/${id}`, data),
     onSuccess: (task) => {
       // The open task dialog reads ["tasks", taskId]. Update it from the actual
       // API response so edits (status, title, assignee, etc.) are reflected
@@ -50,8 +52,15 @@ export function useUpdateTask(projectId: string) {
 export function useMoveTask(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status, position }: { id: string; status: string; position: number }) =>
-      api.patch<Task>(`/tasks/${id}/move`, { status, position }),
+    mutationFn: ({
+      id,
+      status,
+      position,
+    }: {
+      id: string;
+      status: string;
+      position: number;
+    }) => api.patch<Task>(`/tasks/${id}/move`, { status, position }),
     // Optimistic update so drag-and-drop feels instant.
     onMutate: async ({ id, status, position }) => {
       await qc.cancelQueries({ queryKey: ["kanban", projectId] });
@@ -63,13 +72,16 @@ export function useMoveTask(projectId: string) {
             tasks: col.tasks.filter((t) => t.id !== id),
           })),
         };
-        const moved = previous.columns.flatMap((c) => c.tasks).find((t) => t.id === id);
+        const moved = previous.columns
+          .flatMap((c) => c.tasks)
+          .find((t) => t.id === id);
         if (moved) {
           const target = next.columns.find((c) => c.status === status);
           if (target) {
-            target.tasks = [...target.tasks, { ...moved, status: status as Task["status"], position }].sort(
-              (a, b) => a.position - b.position
-            );
+            target.tasks = [
+              ...target.tasks,
+              { ...moved, status: status as Task["status"], position },
+            ].sort((a, b) => a.position - b.position);
           }
         }
         qc.setQueryData(["kanban", projectId], next);
@@ -77,7 +89,8 @@ export function useMoveTask(projectId: string) {
       return { previous };
     },
     onError: (_err, _vars, context) => {
-      if (context?.previous) qc.setQueryData(["kanban", projectId], context.previous);
+      if (context?.previous)
+        qc.setQueryData(["kanban", projectId], context.previous);
       toast({ title: "Couldn't move task", variant: "error" });
     },
     onSettled: () => {
@@ -108,7 +121,9 @@ export function useTaskComments(taskId: string | undefined) {
 export function useAddComment(taskId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: string) => api.post<TaskComment>(`/tasks/${taskId}/comments`, { body }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["task-comments", taskId] }),
+    mutationFn: (body: string) =>
+      api.post<TaskComment>(`/tasks/${taskId}/comments`, { body }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["task-comments", taskId] }),
   });
 }
