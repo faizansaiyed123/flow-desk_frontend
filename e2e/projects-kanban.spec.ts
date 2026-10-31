@@ -1,7 +1,10 @@
 import { test, expect } from "@playwright/test";
 import { uniqueEmail, uniqueName } from "./helpers";
 
-async function registerAndLogin(page: import("@playwright/test").Page, workspaceName: string) {
+async function registerAndLogin(
+  page: import("@playwright/test").Page,
+  workspaceName: string,
+) {
   await page.goto("/register");
   await page.getByLabel("Your name").fill("Test User");
   await page.getByLabel("Workspace name").fill(workspaceName);
@@ -12,7 +15,9 @@ async function registerAndLogin(page: import("@playwright/test").Page, workspace
 }
 
 test.describe("Projects and Kanban board", () => {
-  test("create a project, add tasks to columns, and move a task across the board", async ({ page }) => {
+  test("create a project, add tasks to columns, and move a task across the board", async ({
+    page,
+  }) => {
     await registerAndLogin(page, uniqueName("Kanban Co"));
 
     await page.getByRole("link", { name: "Projects" }).click();
@@ -22,7 +27,9 @@ test.describe("Projects and Kanban board", () => {
     await page.getByRole("button", { name: "Create project" }).click();
 
     await page.getByText(projectName).click();
-    await expect(page.getByRole("heading", { name: projectName })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: projectName }),
+    ).toBeVisible();
 
     // Add a task to the "To do" column.
     const todoColumn = page.locator("text=To do").locator("..").locator("..");
@@ -41,8 +48,13 @@ test.describe("Projects and Kanban board", () => {
     await page.getByRole("option", { name: "In Progress" }).click();
 
     // The board should re-render with the task in the In Progress column.
-    const inProgressColumn = page.locator("text=In progress").locator("..").locator("..");
-    await expect(inProgressColumn.getByText(taskTitle)).toBeVisible({ timeout: 10000 });
+    const inProgressColumn = page
+      .locator("text=In progress")
+      .locator("..")
+      .locator("..");
+    await expect(inProgressColumn.getByText(taskTitle)).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("filter projects by status", async ({ page }) => {
@@ -64,7 +76,9 @@ test.describe("Projects and Kanban board", () => {
     await expect(page.getByText(activeProject)).toBeVisible();
   });
 
-  test("task detail can be opened, edited, and commented on", async ({ page }) => {
+  test("task detail can be opened, edited, and commented on", async ({
+    page,
+  }) => {
     await registerAndLogin(page, uniqueName("Task Detail Co"));
     await page.getByRole("link", { name: "Projects" }).click();
     const projectName = uniqueName("Comment Project");
@@ -73,7 +87,10 @@ test.describe("Projects and Kanban board", () => {
     await page.getByRole("button", { name: "Create project" }).click();
     await page.getByText(projectName).click();
 
-const backlogColumn = page.locator("text=Backlog").locator("..").locator("..");
+    const backlogColumn = page
+      .locator("text=Backlog")
+      .locator("..")
+      .locator("..");
     await backlogColumn.getByRole("button", { name: /add task/i }).click();
     const taskTitle = uniqueName("Investigate slow query");
     await page.getByPlaceholder("Task title...").fill(taskTitle);

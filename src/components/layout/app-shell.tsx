@@ -17,7 +17,12 @@ import {
   X,
 } from "lucide-react";
 import { useMe, useLogout, useSwitchTenant } from "@/hooks/use-auth";
-import { useUnreadCount, useNotifications, useMarkNotificationRead, useMarkAllRead } from "@/hooks/use-notifications";
+import {
+  useUnreadCount,
+  useNotifications,
+  useMarkNotificationRead,
+  useMarkAllRead,
+} from "@/hooks/use-notifications";
 import { useCurrentTenant } from "@/hooks/use-team";
 import { useAuthStore } from "@/stores/auth-store";
 import { Avatar } from "@/components/ui/avatar";
@@ -64,7 +69,9 @@ export function AppShell() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const currentMembership = me?.memberships.find((m) => m.tenant_id === currentTenantId) ?? me?.memberships[0];
+  const currentMembership =
+    me?.memberships.find((m) => m.tenant_id === currentTenantId) ??
+    me?.memberships[0];
 
   return (
     <div className="flex h-screen bg-ink-950">
@@ -80,12 +87,17 @@ export function AppShell() {
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-60 shrink-0 flex-col border-r border-line-700 bg-ink-900 transition-transform md:static md:translate-x-0",
-          mobileNavOpen ? "translate-x-0" : "-translate-x-full"
+          mobileNavOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <div className="flex h-14 items-center justify-between gap-2 border-b border-line-700 px-5">
-          <span className="font-display text-lg font-semibold text-paper-100">FlowDesk</span>
-          <button className="text-paper-400 hover:text-paper-100 md:hidden" onClick={() => setMobileNavOpen(false)}>
+          <span className="font-display text-lg font-semibold text-paper-100">
+            FlowDesk
+          </span>
+          <button
+            className="text-paper-400 hover:text-paper-100 md:hidden"
+            onClick={() => setMobileNavOpen(false)}
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -101,7 +113,7 @@ export function AppShell() {
                   "flex items-center gap-3 rounded-[var(--radius-card)] px-3 py-2 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-ink-800 text-brass-400"
-                    : "text-paper-400 hover:bg-ink-800 hover:text-paper-100"
+                    : "text-paper-400 hover:bg-ink-800 hover:text-paper-100",
                 )
               }
             >
@@ -146,11 +158,16 @@ export function AppShell() {
             <NotificationsMenu />
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-2 rounded-full focus-visible:focus-ring">
-                <Avatar name={me?.user.full_name ?? "?"} src={me?.user.avatar_url} />
+                <Avatar
+                  name={me?.user.full_name ?? "?"}
+                  src={me?.user.avatar_url}
+                />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>{me?.user.full_name}</DropdownMenuLabel>
-                <div className="px-2.5 pb-2 text-xs text-paper-500">{me?.user.email}</div>
+                <div className="px-2.5 pb-2 text-xs text-paper-500">
+                  {me?.user.email}
+                </div>
                 {currentMembership && (
                   <div className="px-2.5 pb-2">
                     <Badge variant="brass" className="capitalize">
@@ -188,7 +205,11 @@ function TenantSwitcher({
 }) {
   const { data: tenant } = useCurrentTenant();
   if (memberships.length <= 1) {
-    return <span className="font-display text-base text-paper-100">{tenant?.name ?? "Workspace"}</span>;
+    return (
+      <span className="font-display text-base text-paper-100">
+        {tenant?.name ?? "Workspace"}
+      </span>
+    );
   }
   return (
     <DropdownMenu>
@@ -230,29 +251,41 @@ function NotificationsMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
         <div className="flex items-center justify-between px-2.5 py-1.5">
-          <DropdownMenuLabel className="px-0 py-0">Notifications</DropdownMenuLabel>
+          <DropdownMenuLabel className="px-0 py-0">
+            Notifications
+          </DropdownMenuLabel>
           {Boolean(unread?.count) && (
-            <button onClick={() => markAllRead.mutate()} className="text-xs text-brass-400 hover:underline">
+            <button
+              onClick={() => markAllRead.mutate()}
+              className="text-xs text-brass-400 hover:underline"
+            >
               Mark all read
             </button>
           )}
         </div>
         <DropdownMenuSeparator />
         {!notifications?.items.length && (
-          <div className="px-2.5 py-6 text-center text-sm text-paper-500">You're all caught up.</div>
+          <div className="px-2.5 py-6 text-center text-sm text-paper-500">
+            You're all caught up.
+          </div>
         )}
         <div className="max-h-80 overflow-y-auto">
           {notifications?.items.map((n) => (
             <DropdownMenuItem
               key={n.id}
-              className={cn("flex-col items-start gap-0.5", !n.is_read && "bg-ink-700/50")}
+              className={cn(
+                "flex-col items-start gap-0.5",
+                !n.is_read && "bg-ink-700/50",
+              )}
               onClick={() => {
                 markRead.mutate(n.id);
                 if (n.link) navigate(n.link);
               }}
             >
               <span className="text-sm text-paper-100">{n.title}</span>
-              <span className="text-xs text-paper-500">{formatRelativeTime(n.created_at)}</span>
+              <span className="text-xs text-paper-500">
+                {formatRelativeTime(n.created_at)}
+              </span>
             </DropdownMenuItem>
           ))}
         </div>

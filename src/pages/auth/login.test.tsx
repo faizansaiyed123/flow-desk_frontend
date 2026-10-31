@@ -18,7 +18,9 @@ describe("LoginPage", () => {
     // type="email"> rejects malformed strings during keystroke-by-keystroke
     // simulation, which isn't how real browsers behave — this only affects
     // the test harness, not the app itself.
-    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "not-an-email" } });
+    fireEvent.change(screen.getByLabelText(/email/i), {
+      target: { value: "not-an-email" },
+    });
     await user.type(screen.getByLabelText(/password/i), "somepassword");
     await user.click(screen.getByRole("button", { name: /log in/i }));
 
@@ -32,7 +34,9 @@ describe("LoginPage", () => {
     await user.type(screen.getByLabelText(/email/i), "ada@example.com");
     await user.click(screen.getByRole("button", { name: /log in/i }));
 
-    expect(await screen.findByText(/password is required/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/password is required/i),
+    ).toBeInTheDocument();
   });
 
   it("logs in successfully and stores tokens", async () => {
@@ -56,12 +60,17 @@ describe("LoginPage", () => {
     await user.type(screen.getByLabelText(/password/i), "wrongpassword");
     await user.click(screen.getByRole("button", { name: /log in/i }));
 
-    expect(await screen.findByText(/incorrect email or password/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/incorrect email or password/i),
+    ).toBeInTheDocument();
     expect(useAuthStore.getState().accessToken).toBeNull();
   });
 
   it("has a link to the register page", () => {
     renderWithProviders(<LoginPage />);
-    expect(screen.getByRole("link", { name: /create one/i })).toHaveAttribute("href", "/register");
+    expect(screen.getByRole("link", { name: /create one/i })).toHaveAttribute(
+      "href",
+      "/register",
+    );
   });
 });

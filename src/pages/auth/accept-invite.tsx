@@ -45,7 +45,7 @@ export function AcceptInvitePage() {
       api.post<{ access_token: string; refresh_token: string }>(
         "/tenants/invitations/accept",
         { token, ...data },
-        { skipAuth: true }
+        { skipAuth: true },
       ),
     onSuccess: (data) => {
       setTokens(data.access_token, data.refresh_token);
@@ -53,7 +53,8 @@ export function AcceptInvitePage() {
       if (tenantId) setCurrentTenant(tenantId);
       navigate("/app/dashboard");
     },
-    onError: (e) => setError(e instanceof ApiError ? e.detail : "Something went wrong."),
+    onError: (e) =>
+      setError(e instanceof ApiError ? e.detail : "Something went wrong."),
   });
 
   const {
@@ -65,7 +66,9 @@ export function AcceptInvitePage() {
   if (!token) {
     return (
       <AuthLayout title="Invalid invitation">
-        <p className="text-sm text-paper-400">This invitation link is missing its token.</p>
+        <p className="text-sm text-paper-400">
+          This invitation link is missing its token.
+        </p>
       </AuthLayout>
     );
   }
@@ -82,9 +85,14 @@ export function AcceptInvitePage() {
     return (
       <AuthLayout title="Invitation not found">
         <p className="text-sm text-paper-400">
-          {preview.error instanceof ApiError ? preview.error.detail : "This invitation is invalid or has expired."}
+          {preview.error instanceof ApiError
+            ? preview.error.detail
+            : "This invitation is invalid or has expired."}
         </p>
-        <Link to="/login" className="mt-4 inline-block text-sm text-brass-400 hover:underline">
+        <Link
+          to="/login"
+          className="mt-4 inline-block text-sm text-brass-400 hover:underline"
+        >
           Back to log in
         </Link>
       </AuthLayout>
@@ -110,12 +118,20 @@ export function AcceptInvitePage() {
           <div>
             <Label htmlFor="full_name">Your name</Label>
             <Input id="full_name" {...register("full_name")} />
-            {errors.full_name && <p className="mt-1 text-xs text-clay-400">{errors.full_name.message}</p>}
+            {errors.full_name && (
+              <p className="mt-1 text-xs text-clay-400">
+                {errors.full_name.message}
+              </p>
+            )}
           </div>
           <div>
             <Label htmlFor="password">Choose a password</Label>
             <Input id="password" type="password" {...register("password")} />
-            {errors.password && <p className="mt-1 text-xs text-clay-400">{errors.password.message}</p>}
+            {errors.password && (
+              <p className="mt-1 text-xs text-clay-400">
+                {errors.password.message}
+              </p>
+            )}
           </div>
           {error && (
             <p className="rounded-[var(--radius-card)] border border-clay-500/30 bg-clay-950 px-3 py-2 text-sm text-clay-400">
@@ -129,7 +145,8 @@ export function AcceptInvitePage() {
       ) : (
         <div className="space-y-4">
           <p className="text-sm text-paper-400">
-            You already have a FlowDesk account with this email. Accept the invitation to join this workspace.
+            You already have a FlowDesk account with this email. Accept the
+            invitation to join this workspace.
           </p>
           {error && (
             <p className="rounded-[var(--radius-card)] border border-clay-500/30 bg-clay-950 px-3 py-2 text-sm text-clay-400">

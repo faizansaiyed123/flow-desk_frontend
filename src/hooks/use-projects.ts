@@ -3,10 +3,21 @@ import { api } from "@/lib/api-client";
 import type { Page, Project, ProjectWithStats } from "@/types/api";
 import { toast } from "@/stores/toast-store";
 
-export function useProjects(params: { search?: string; status?: string; client_id?: string; page?: number } = {}) {
+export function useProjects(
+  params: {
+    search?: string;
+    status?: string;
+    client_id?: string;
+    page?: number;
+  } = {},
+) {
   return useQuery({
     queryKey: ["projects", params],
-    queryFn: () => api.get<Page<ProjectWithStats>>("/projects", { ...params, page_size: 50 }),
+    queryFn: () =>
+      api.get<Page<ProjectWithStats>>("/projects", {
+        ...params,
+        page_size: 50,
+      }),
   });
 }
 
@@ -21,7 +32,8 @@ export function useProject(id: string | undefined) {
 export function useCreateProject() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Partial<Project>) => api.post<Project>("/projects", data),
+    mutationFn: (data: Partial<Project>) =>
+      api.post<Project>("/projects", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["projects"] });
       toast({ title: "Project created", variant: "success" });
@@ -32,7 +44,8 @@ export function useCreateProject() {
 export function useUpdateProject(id: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Partial<Project>) => api.patch<Project>(`/projects/${id}`, data),
+    mutationFn: (data: Partial<Project>) =>
+      api.patch<Project>(`/projects/${id}`, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["projects"] });
       toast({ title: "Project updated", variant: "success" });

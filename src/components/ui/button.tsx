@@ -1,4 +1,8 @@
-import React, { type ButtonHTMLAttributes, forwardRef, type ReactNode } from "react";
+import React, {
+  type ButtonHTMLAttributes,
+  forwardRef,
+  type ReactNode,
+} from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
@@ -9,7 +13,8 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary: "bg-brass-500 text-ink-950 hover:bg-brass-400",
-        secondary: "bg-ink-800 text-paper-100 border border-line-600 hover:bg-ink-700",
+        secondary:
+          "bg-ink-800 text-paper-100 border border-line-600 hover:bg-ink-700",
         ghost: "text-paper-300 hover:bg-ink-800 hover:text-paper-100",
         outline: "border border-line-600 text-paper-100 hover:bg-ink-800",
         danger: "bg-clay-500 text-paper-50 hover:bg-clay-400",
@@ -23,7 +28,7 @@ const buttonVariants = cva(
       },
     },
     defaultVariants: { variant: "primary", size: "md" },
-  }
+  },
 );
 
 export interface ButtonProps
@@ -35,7 +40,19 @@ export interface ButtonProps
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, loading, disabled, asChild, children, ...props }, ref) => {
+  (
+    {
+      className,
+      variant,
+      size,
+      loading,
+      disabled,
+      asChild,
+      children,
+      ...props
+    },
+    ref,
+  ) => {
     if (asChild) {
       return (
         <span
@@ -61,6 +78,6 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {children}
       </button>
     );
-  }
+  },
 );
 Button.displayName = "Button";

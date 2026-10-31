@@ -11,7 +11,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const schema = z.object({
   name: z.string().min(1, "Name is required."),
@@ -29,12 +36,22 @@ export function ClientsPage() {
   const createClient = useCreateClient();
   const navigate = useNavigate();
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
   function onSubmit(values: FormValues) {
     createClient.mutate(
       { ...values, email: values.email || undefined },
-      { onSuccess: () => { setDialogOpen(false); reset(); } }
+      {
+        onSuccess: () => {
+          setDialogOpen(false);
+          reset();
+        },
+      },
     );
   }
 
@@ -54,11 +71,19 @@ export function ClientsPage() {
               <DialogHeader>
                 <DialogTitle>New client</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+              <form
+                onSubmit={handleSubmit(onSubmit)}
+                className="space-y-4"
+                noValidate
+              >
                 <div>
                   <Label htmlFor="name">Name</Label>
                   <Input id="name" {...register("name")} />
-                  {errors.name && <p className="mt-1 text-xs text-clay-400">{errors.name.message}</p>}
+                  {errors.name && (
+                    <p className="mt-1 text-xs text-clay-400">
+                      {errors.name.message}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="company">Company</Label>
@@ -68,7 +93,11 @@ export function ClientsPage() {
                   <div>
                     <Label htmlFor="email">Email</Label>
                     <Input id="email" type="email" {...register("email")} />
-                    {errors.email && <p className="mt-1 text-xs text-clay-400">{errors.email.message}</p>}
+                    {errors.email && (
+                      <p className="mt-1 text-xs text-clay-400">
+                        {errors.email.message}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="phone">Phone</Label>
@@ -93,11 +122,18 @@ export function ClientsPage() {
       <div className="mb-4 flex items-center gap-2">
         <div className="relative w-full max-w-xs">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paper-500" />
-          <Input placeholder="Search clients..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input
+            placeholder="Search clients..."
+            className="pl-9"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
       </div>
 
-      {isLoading && <div className="h-48 animate-pulse rounded-[var(--radius-card)] bg-ink-900" />}
+      {isLoading && (
+        <div className="h-48 animate-pulse rounded-[var(--radius-card)] bg-ink-900" />
+      )}
 
       {!isLoading && data?.items.length === 0 && (
         <EmptyState
@@ -124,9 +160,15 @@ export function ClientsPage() {
                   onClick={() => navigate(`/app/clients/${client.id}`)}
                   className="cursor-pointer border-b border-line-700 last:border-0 hover:bg-ink-900"
                 >
-                  <td className="px-4 py-3 font-medium text-paper-100">{client.name}</td>
-                  <td className="px-4 py-3 text-paper-400">{client.company || "-"}</td>
-                  <td className="px-4 py-3 text-paper-400">{client.email || "-"}</td>
+                  <td className="px-4 py-3 font-medium text-paper-100">
+                    {client.name}
+                  </td>
+                  <td className="px-4 py-3 text-paper-400">
+                    {client.company || "-"}
+                  </td>
+                  <td className="px-4 py-3 text-paper-400">
+                    {client.email || "-"}
+                  </td>
                 </tr>
               ))}
             </tbody>

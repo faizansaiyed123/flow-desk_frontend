@@ -1,4 +1,9 @@
-import type { InvoiceStatus, ProjectStatus, TaskPriority, TaskStatus } from "@/types/api";
+import type {
+  InvoiceStatus,
+  ProjectStatus,
+  TaskPriority,
+  TaskStatus,
+} from "@/types/api";
 
 export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
   planning: "Planning",
@@ -38,7 +43,10 @@ export const INVOICE_STATUS_LABEL: Record<InvoiceStatus, string> = {
   void: "Void",
 };
 
-export const INVOICE_STATUS_VARIANT: Record<InvoiceStatus, "neutral" | "sky" | "moss" | "clay"> = {
+export const INVOICE_STATUS_VARIANT: Record<
+  InvoiceStatus,
+  "neutral" | "sky" | "moss" | "clay"
+> = {
   draft: "neutral",
   sent: "sky",
   paid: "moss",

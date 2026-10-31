@@ -15,11 +15,14 @@ async function waitForApiResponse(
   path: string,
   action: () => Promise<unknown>,
 ) {
-  const responsePromise = page.waitForResponse((response) => {
-    const request = response.request();
-    const url = new URL(response.url());
-    return request.method() === method && url.pathname === `/api/v1${path}`;
-  }, { timeout: 15_000 });
+  const responsePromise = page.waitForResponse(
+    (response) => {
+      const request = response.request();
+      const url = new URL(response.url());
+      return request.method() === method && url.pathname === `/api/v1${path}`;
+    },
+    { timeout: 15_000 },
+  );
   await action();
   return responsePromise;
 }
@@ -39,11 +42,18 @@ async function expectSuccessfulApiAction(
   return response;
 }
 
-test("captures real FlowDesk browser actions, API responses, and persistent PostgreSQL records", async ({ page, browser }) => {
+test("captures real FlowDesk browser actions, API responses, and persistent PostgreSQL records", async ({
+  page,
+  browser,
+}) => {
   test.setTimeout(600_000);
   // This test is deliberately not wired to MSW and has no route mocks:
   // Vite forwards /api to the actual FastAPI process and PostgreSQL database.
-  const observedApiResponses: Array<{ method: string; path: string; status: number }> = [];
+  const observedApiResponses: Array<{
+    method: string;
+    path: string;
+    status: number;
+  }> = [];
   page.on("response", (response) => {
     const url = new URL(response.url());
     if (url.pathname.startsWith("/api/v1/")) {
@@ -62,7 +72,9 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
 
   await page.getByRole("link", { name: /forgot password/i }).click();
   await expect(page).toHaveURL(/forgot-password$/);
-  await expect(page.getByRole("heading", { name: "Reset your password" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Reset your password" }),
+  ).toBeVisible();
   const recoveryEmail = uniqueEmail();
   const recoveryEmailInput = page.getByRole("textbox", { name: "Email" });
   await recoveryEmailInput.fill(recoveryEmail);
@@ -75,7 +87,9 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     () => page.getByRole("button", { name: "Send reset link" }).click(),
   );
   expect(await recovery.json()).toHaveProperty("message");
-  await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Check your email" }),
+  ).toBeVisible();
   await capture(page, "00-forgot-password");
 
   await page.goto("/reset-password");
@@ -96,22 +110,31 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await capture(page, "00-invalid-reset-link");
 
   await page.goto("/accept-invite");
-  await expect(page.getByRole("heading", { name: "Invalid invitation" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Invalid invitation" }),
+  ).toBeVisible();
   await capture(page, "00-missing-invitation-token");
   const invalidInvite = page.waitForResponse((response) => {
     const url = new URL(response.url());
-    return response.request().method() === "GET" &&
-      url.pathname === "/api/v1/tenants/invitations/invalid-walkthrough-invitation";
+    return (
+      response.request().method() === "GET" &&
+      url.pathname ===
+        "/api/v1/tenants/invitations/invalid-walkthrough-invitation"
+    );
   });
   await page.goto("/accept-invite?token=invalid-walkthrough-invitation");
-  await expect(page.getByRole("heading", { name: /invitation not found/i })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /invitation not found/i }),
+  ).toBeVisible();
   const invalidInviteResponse = await invalidInvite;
   expect(invalidInviteResponse.status()).toBeGreaterThanOrEqual(400);
   await capture(page, "00-invalid-invitation");
 
   // Register a real account and workspace through the UI.
   await page.goto("/register");
-  await expect(page.getByRole("button", { name: "Create workspace" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Create workspace" }),
+  ).toBeVisible();
   await capture(page, "00-register");
 
   const accountEmail = uniqueEmail();
@@ -167,9 +190,10 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     },
   );
   await expect(page.getByText(note)).toBeVisible();
-  const savedClient = page.waitForResponse((response) =>
-    response.request().method() === "GET" &&
-    new URL(response.url()).pathname === `/api/v1/clients/${client.id}`,
+  const savedClient = page.waitForResponse(
+    (response) =>
+      response.request().method() === "GET" &&
+      new URL(response.url()).pathname === `/api/v1/clients/${client.id}`,
   );
   await page.reload();
   const savedClientResponse = await savedClient;
@@ -213,11 +237,17 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     async () => {
       await page.getByRole("button", { name: "Edit", exact: true }).click();
       const editProjectDialog = page.getByRole("dialog");
-      await editProjectDialog.getByLabel("Description").fill("Updated from the project detail page.");
-      await editProjectDialog.getByRole("button", { name: "Save changes" }).click();
+      await editProjectDialog
+        .getByLabel("Description")
+        .fill("Updated from the project detail page.");
+      await editProjectDialog
+        .getByRole("button", { name: "Save changes" })
+        .click();
     },
   );
-  expect((await updatedProjectResponse.json()).description).toBe("Updated from the project detail page.");
+  expect((await updatedProjectResponse.json()).description).toBe(
+    "Updated from the project detail page.",
+  );
   await expect(page.getByText("Backlog", { exact: true })).toBeVisible();
   await capture(page, "04b-project-details-updated");
 
@@ -227,7 +257,10 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "POST",
     "/tasks",
     async () => {
-      const backlogColumn = page.locator("text=Backlog").locator("..").locator("..");
+      const backlogColumn = page
+        .locator("text=Backlog")
+        .locator("..")
+        .locator("..");
       await backlogColumn.getByRole("button", { name: /add task/i }).click();
       await page.getByPlaceholder("Task title...").fill(taskTitle);
       await page.getByRole("button", { name: "Create task" }).click();
@@ -250,7 +283,9 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     },
   );
   expect((await movedTask.json()).status).toBe("in_progress");
-  await expect(page.getByRole("combobox", { name: "Status" })).toContainText("In Progress");
+  await expect(page.getByRole("combobox", { name: "Status" })).toContainText(
+    "In Progress",
+  );
   await capture(page, "06-task-detail-in-progress");
   await page.keyboard.press("Escape");
   await page.reload();
@@ -261,21 +296,28 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   // Project attachments: upload a real multipart file, download its bytes, and delete a second file.
   await page.getByRole("tab", { name: "Files" }).click();
   await expect(page.getByText("No files attached yet.")).toBeVisible();
-  const attachmentContent = "FlowDesk real full-stack walkthrough attachment. PostgreSQL and disk storage are verified.";
+  const attachmentContent =
+    "FlowDesk real full-stack walkthrough attachment. PostgreSQL and disk storage are verified.";
   const attachmentResponse = await expectSuccessfulApiAction(
     page,
     "POST",
     "/attachments",
-    () => page.getByLabel("Upload project attachment").setInputFiles({
-      name: "walkthrough-evidence.txt",
-      mimeType: "text/plain",
-      buffer: Buffer.from(attachmentContent, "utf8"),
-    }),
+    () =>
+      page.getByLabel("Upload project attachment").setInputFiles({
+        name: "walkthrough-evidence.txt",
+        mimeType: "text/plain",
+        buffer: Buffer.from(attachmentContent, "utf8"),
+      }),
   );
   const attachment = await attachmentResponse.json();
   expect(attachment.file_name).toBe("walkthrough-evidence.txt");
   expect(attachment.project_id).toBe(project.id);
-  await expect(page.getByText("walkthrough-evidence.txt")).toBeVisible();
+  const attachmentRow = page.locator(
+    '[data-attachment-id="' + attachment.id + '"]',
+  );
+  await expect(
+    attachmentRow.getByText(attachment.file_name, { exact: true }),
+  ).toBeVisible();
 
   // Content-Disposition makes Chromium treat the response as a download, so
   // verify the saved browser download rather than reading response.body() (which
@@ -285,34 +327,53 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     page,
     "GET",
     "/attachments/" + attachment.id + "/download",
-    () => page.getByRole("button", { name: "Download walkthrough-evidence.txt" }).click(),
+    () =>
+      attachmentRow
+        .getByRole("button", {
+          name: "Download " + attachment.file_name,
+        })
+        .click(),
   );
   expect(attachmentDownload.status()).toBe(200);
   const browserDownload = await browserDownloadPromise;
   expect(browserDownload.suggestedFilename()).toBe("walkthrough-evidence.txt");
   const downloadedPath = await browserDownload.path();
-  if (!downloadedPath) throw new Error("The attachment download did not produce a local file.");
-  expect((await readFile(downloadedPath)).toString("utf8")).toBe(attachmentContent);
+  if (!downloadedPath)
+    throw new Error("The attachment download did not produce a local file.");
+  expect((await readFile(downloadedPath)).toString("utf8")).toBe(
+    attachmentContent,
+  );
 
   const temporaryAttachmentResponse = await expectSuccessfulApiAction(
     page,
     "POST",
     "/attachments",
-    () => page.getByLabel("Upload project attachment").setInputFiles({
-      name: "temporary-delete.txt",
-      mimeType: "text/plain",
-      buffer: Buffer.from("Delete this real upload after verifying the delete endpoint.", "utf8"),
-    }),
+    () =>
+      page.getByLabel("Upload project attachment").setInputFiles({
+        name: "temporary-delete.txt",
+        mimeType: "text/plain",
+        buffer: Buffer.from(
+          "Delete this real upload after verifying the delete endpoint.",
+          "utf8",
+        ),
+      }),
   );
   const temporaryAttachment = await temporaryAttachmentResponse.json();
   expect(temporaryAttachment.project_id).toBe(project.id);
-  const temporaryAttachmentRow = page.locator('[data-attachment-id="' + temporaryAttachment.id + '"]');
-  await expect(temporaryAttachmentRow.getByText("temporary-delete.txt", { exact: true })).toBeVisible();
+  const temporaryAttachmentRow = page.locator(
+    '[data-attachment-id="' + temporaryAttachment.id + '"]',
+  );
+  await expect(
+    temporaryAttachmentRow.getByText("temporary-delete.txt", { exact: true }),
+  ).toBeVisible();
   await expectSuccessfulApiAction(
     page,
     "DELETE",
     "/attachments/" + temporaryAttachment.id,
-    () => temporaryAttachmentRow.getByRole("button", { name: "Delete temporary-delete.txt" }).click(),
+    () =>
+      temporaryAttachmentRow
+        .getByRole("button", { name: "Delete temporary-delete.txt" })
+        .click(),
   );
   await expect(temporaryAttachmentRow).not.toBeVisible();
   await capture(page, "07-project-attachments");
@@ -320,7 +381,10 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   // Manual time entry plus the server-side timer lifecycle.
   await page.getByRole("link", { name: "Time" }).click();
   await page.getByRole("button", { name: /log time manually/i }).click();
-  await page.getByRole("dialog").getByText(/select a project/i).click();
+  await page
+    .getByRole("dialog")
+    .getByText(/select a project/i)
+    .click();
   await page.getByRole("option", { name: projectName }).click();
   await page.getByLabel("Date & time").fill("2026-10-24T10:00");
   await page.getByLabel("Minutes").fill("45");
@@ -329,24 +393,40 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     page,
     "POST",
     "/time-entries",
-    () => page.getByRole("dialog").getByRole("button", { name: "Log time", exact: true }).click(),
+    () =>
+      page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Log time", exact: true })
+        .click(),
   );
   const manualEntry = await manualTime.json();
   expect(manualEntry.duration_minutes).toBe(45);
-  await expect(page.getByText("Manual verification entry", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Manual verification entry", { exact: true }),
+  ).toBeVisible();
   const updatedManualTime = await expectSuccessfulApiAction(
     page,
     "PATCH",
     "/time-entries/" + manualEntry.id,
     async () => {
-      await page.getByRole("button", { name: "Edit time entry Manual verification entry" }).click();
+      await page
+        .getByRole("button", {
+          name: "Edit time entry Manual verification entry",
+        })
+        .click();
       const editDialog = page.getByRole("dialog");
-      await editDialog.getByLabel("Description").fill("Manual verification entry edited");
+      await editDialog
+        .getByLabel("Description")
+        .fill("Manual verification entry edited");
       await editDialog.getByRole("button", { name: "Save time entry" }).click();
     },
   );
-  expect((await updatedManualTime.json()).description).toBe("Manual verification entry edited");
-  await expect(page.getByText("Manual verification entry edited")).toBeVisible();
+  expect((await updatedManualTime.json()).description).toBe(
+    "Manual verification entry edited",
+  );
+  await expect(
+    page.getByText("Manual verification entry edited"),
+  ).toBeVisible();
   await capture(page, "08-time-tracking-manual-entry");
 
   const temporaryTimeResponse = await expectSuccessfulApiAction(
@@ -358,21 +438,38 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
       const temporaryTimeDialog = page.getByRole("dialog");
       await temporaryTimeDialog.getByText(/select a project/i).click();
       await page.getByRole("option", { name: projectName }).click();
-      await temporaryTimeDialog.getByLabel("Date & time").fill("2026-10-24T09:00");
+      await temporaryTimeDialog
+        .getByLabel("Date & time")
+        .fill("2026-10-24T09:00");
       await temporaryTimeDialog.getByLabel("Minutes").fill("15");
-      await temporaryTimeDialog.getByLabel("Description").fill("Temporary time entry to delete");
-      await temporaryTimeDialog.getByRole("button", { name: "Log time", exact: true }).click();
+      await temporaryTimeDialog
+        .getByLabel("Description")
+        .fill("Temporary time entry to delete");
+      await temporaryTimeDialog
+        .getByRole("button", { name: "Log time", exact: true })
+        .click();
     },
   );
   const temporaryTimeEntry = await temporaryTimeResponse.json();
   expect(temporaryTimeEntry.duration_minutes).toBe(15);
-  const temporaryTimeRow = page.locator('[data-time-entry-id="' + temporaryTimeEntry.id + '"]');
-  await expect(temporaryTimeRow.getByText("Temporary time entry to delete", { exact: true })).toBeVisible();
+  const temporaryTimeRow = page.locator(
+    '[data-time-entry-id="' + temporaryTimeEntry.id + '"]',
+  );
+  await expect(
+    temporaryTimeRow.getByText("Temporary time entry to delete", {
+      exact: true,
+    }),
+  ).toBeVisible();
   await expectSuccessfulApiAction(
     page,
     "DELETE",
     "/time-entries/" + temporaryTimeEntry.id,
-    () => temporaryTimeRow.getByRole("button", { name: "Delete time entry Temporary time entry to delete" }).click(),
+    () =>
+      temporaryTimeRow
+        .getByRole("button", {
+          name: "Delete time entry Temporary time entry to delete",
+        })
+        .click(),
   );
   await expect(temporaryTimeRow).not.toBeVisible();
   await capture(page, "08b-time-entry-deleted");
@@ -394,19 +491,26 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     () => page.getByRole("button", { name: /stop/i }).click(),
   );
   expect((await stoppedTimer.json()).ended_at).toBeTruthy();
-  await expect(page.getByText("Manual verification entry edited", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Manual verification entry edited", { exact: true }),
+  ).toBeVisible();
   await page.reload();
-  await expect(page.getByText("Manual verification entry edited", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Manual verification entry edited", { exact: true }),
+  ).toBeVisible();
   await capture(page, "10-time-tracking-stopped-reloaded");
 
   // Generate an invoice from completed billable time using the project billing configuration.
   await page.locator("nav").getByRole("link", { name: "Projects" }).click();
   await page.getByText(projectName).click();
-  await expect(page.getByRole("button", { name: /invoice unbilled time/i })).toBeEnabled();
-  const generatedTimeRead = page.waitForResponse((response) =>
-    response.request().method() === "GET" &&
-    new URL(response.url()).pathname === "/api/v1/time-entries" &&
-    new URL(response.url()).searchParams.get("project_id") === project.id,
+  await expect(
+    page.getByRole("button", { name: /invoice unbilled time/i }),
+  ).toBeEnabled();
+  const generatedTimeRead = page.waitForResponse(
+    (response) =>
+      response.request().method() === "GET" &&
+      new URL(response.url()).pathname === "/api/v1/time-entries" &&
+      new URL(response.url()).searchParams.get("project_id") === project.id,
   );
   const generatedFromTimeResponse = await expectSuccessfulApiAction(
     page,
@@ -418,15 +522,25 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   expect(generatedTimeInvoice.status).toBe("draft");
   expect(generatedTimeInvoice.project_id).toBe(project.id);
   expect(generatedTimeInvoice.line_items.length).toBeGreaterThan(0);
-  expect(Number(generatedTimeInvoice.line_items[0].quantity)).toBeGreaterThan(0);
+  expect(Number(generatedTimeInvoice.line_items[0].quantity)).toBeGreaterThan(
+    0,
+  );
   expect(Number(generatedTimeInvoice.total)).toBeGreaterThan(0);
   const invoicedTimeReadResponse = await generatedTimeRead;
   expect(invoicedTimeReadResponse.ok()).toBeTruthy();
   const timeEntriesAfterInvoicing = await invoicedTimeReadResponse.json();
-  expect(timeEntriesAfterInvoicing.items.filter((entry: { is_invoiced: boolean }) => entry.is_invoiced).length).toBeGreaterThan(0);
+  expect(
+    timeEntriesAfterInvoicing.items.filter(
+      (entry: { is_invoiced: boolean }) => entry.is_invoiced,
+    ).length,
+  ).toBeGreaterThan(0);
   await page.locator("nav").getByRole("link", { name: "Invoices" }).click();
-  await page.getByText(generatedTimeInvoice.invoice_number, { exact: true }).click();
-  await expect(page.getByRole("heading", { name: generatedTimeInvoice.invoice_number })).toBeVisible();
+  await page
+    .getByText(generatedTimeInvoice.invoice_number, { exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: generatedTimeInvoice.invoice_number }),
+  ).toBeVisible();
   await capture(page, "10b-invoice-from-time-generated");
 
   // A second browser/API-generated invoice will remain draft; the following manual invoice
@@ -436,9 +550,18 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await page.getByRole("button", { name: /new invoice/i }).click();
   await page.getByLabel("Client").click();
   await page.getByRole("option", { name: clientName }).click();
-  await page.getByLabel(/description/i).first().fill("Walkthrough implementation");
-  await page.getByLabel(/quantity/i).first().fill("2");
-  await page.getByLabel(/unit price/i).first().fill("50");
+  await page
+    .getByLabel(/description/i)
+    .first()
+    .fill("Walkthrough implementation");
+  await page
+    .getByLabel(/quantity/i)
+    .first()
+    .fill("2");
+  await page
+    .getByLabel(/unit price/i)
+    .first()
+    .fill("50");
   const invoiceCreated = await expectSuccessfulApiAction(
     page,
     "POST",
@@ -448,10 +571,16 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   const invoice = await invoiceCreated.json();
   expect(invoice.status).toBe("draft");
   expect(Number(invoice.total)).toBe(100);
-  await expect(page.locator('[aria-label="Invoice status: draft"]')).toBeVisible();
+  await expect(
+    page.locator('[aria-label="Invoice status: draft"]'),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Edit" }).click();
-  await expect(page.getByRole("heading", { name: "Edit draft invoice" })).toBeVisible();
-  await page.getByLabel("Invoice notes").fill("Edited in the full-stack walkthrough.");
+  await expect(
+    page.getByRole("heading", { name: "Edit draft invoice" }),
+  ).toBeVisible();
+  await page
+    .getByLabel("Invoice notes")
+    .fill("Edited in the full-stack walkthrough.");
   await capture(page, "11-invoice-draft-edit");
   const invoiceUpdated = await expectSuccessfulApiAction(
     page,
@@ -459,8 +588,12 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "/invoices/" + invoice.id,
     () => page.getByRole("button", { name: "Save draft changes" }).click(),
   );
-  expect((await invoiceUpdated.json()).notes).toBe("Edited in the full-stack walkthrough.");
-  await expect(page.locator('[aria-label="Invoice status: draft"]')).toBeVisible();
+  expect((await invoiceUpdated.json()).notes).toBe(
+    "Edited in the full-stack walkthrough.",
+  );
+  await expect(
+    page.locator('[aria-label="Invoice status: draft"]'),
+  ).toBeVisible();
   await capture(page, "12-invoice-draft");
 
   const invoiceSent = await expectSuccessfulApiAction(
@@ -470,7 +603,9 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     () => page.getByRole("button", { name: /^send$/i }).click(),
   );
   expect((await invoiceSent.json()).status).toBe("sent");
-  await expect(page.locator('[aria-label="Invoice status: sent"]')).toBeVisible();
+  await expect(
+    page.locator('[aria-label="Invoice status: sent"]'),
+  ).toBeVisible();
   await capture(page, "13-invoice-sent");
 
   const invoicePaid = await expectSuccessfulApiAction(
@@ -480,16 +615,21 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     () => page.getByRole("button", { name: /mark paid/i }).click(),
   );
   expect((await invoicePaid.json()).status).toBe("paid");
-  await expect(page.locator('[aria-label="Invoice status: paid"]')).toBeVisible();
-  const freshInvoiceRead = page.waitForResponse((response) =>
-    response.request().method() === "GET" &&
-    new URL(response.url()).pathname === `/api/v1/invoices/${invoice.id}`,
+  await expect(
+    page.locator('[aria-label="Invoice status: paid"]'),
+  ).toBeVisible();
+  const freshInvoiceRead = page.waitForResponse(
+    (response) =>
+      response.request().method() === "GET" &&
+      new URL(response.url()).pathname === `/api/v1/invoices/${invoice.id}`,
   );
   await page.reload();
   const freshInvoice = await freshInvoiceRead;
   expect(freshInvoice.ok()).toBeTruthy();
   expect((await freshInvoice.json()).status).toBe("paid");
-  await expect(page.locator('[aria-label="Invoice status: paid"]')).toBeVisible();
+  await expect(
+    page.locator('[aria-label="Invoice status: paid"]'),
+  ).toBeVisible();
   await capture(page, "14-invoice-paid-reloaded");
 
   // A past-due sent invoice can be explicitly transitioned to overdue.
@@ -497,10 +637,21 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await page.getByRole("button", { name: /new invoice/i }).click();
   await page.getByLabel("Client").click();
   await page.getByRole("option", { name: clientName }).click();
-  await page.getByLabel(/description/i).first().fill("Overdue walkthrough work");
-  await page.getByLabel(/quantity/i).first().fill("1");
-  await page.getByLabel(/unit price/i).first().fill("25");
-  const overdueDate = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
+  await page
+    .getByLabel(/description/i)
+    .first()
+    .fill("Overdue walkthrough work");
+  await page
+    .getByLabel(/quantity/i)
+    .first()
+    .fill("1");
+  await page
+    .getByLabel(/unit price/i)
+    .first()
+    .fill("25");
+  const overdueDate = new Date(Date.now() - 7 * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
   await page.getByLabel("Due date").fill(overdueDate);
   const overdueDraftResponse = await expectSuccessfulApiAction(
     page,
@@ -517,7 +668,9 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "/invoices/" + overdueDraft.id + "/send",
     () => page.getByRole("button", { name: /^send$/i }).click(),
   );
-  await expect(page.getByRole("button", { name: "Mark overdue" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Mark overdue" }),
+  ).toBeVisible();
   const markedOverdue = await expectSuccessfulApiAction(
     page,
     "POST",
@@ -525,7 +678,9 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     () => page.getByRole("button", { name: "Mark overdue" }).click(),
   );
   expect((await markedOverdue.json()).status).toBe("overdue");
-  await expect(page.locator('[aria-label="Invoice status: overdue"]')).toBeVisible();
+  await expect(
+    page.locator('[aria-label="Invoice status: overdue"]'),
+  ).toBeVisible();
   await capture(page, "14-overdue-invoice");
 
   // Keep the overdue invoice overdue for PostgreSQL read-back. Test the void
@@ -534,9 +689,18 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await page.getByRole("button", { name: /new invoice/i }).click();
   await page.getByLabel("Client").click();
   await page.getByRole("option", { name: clientName }).click();
-  await page.getByLabel(/description/i).first().fill("Void walkthrough work");
-  await page.getByLabel(/quantity/i).first().fill("1");
-  await page.getByLabel(/unit price/i).first().fill("15");
+  await page
+    .getByLabel(/description/i)
+    .first()
+    .fill("Void walkthrough work");
+  await page
+    .getByLabel(/quantity/i)
+    .first()
+    .fill("1");
+  await page
+    .getByLabel(/unit price/i)
+    .first()
+    .fill("15");
   const voidDraftResponse = await expectSuccessfulApiAction(
     page,
     "POST",
@@ -552,7 +716,9 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     () => page.getByRole("button", { name: "Void", exact: true }).click(),
   );
   expect((await voidedInvoice.json()).status).toBe("void");
-  await expect(page.locator('[aria-label="Invoice status: void"]')).toBeVisible();
+  await expect(
+    page.locator('[aria-label="Invoice status: void"]'),
+  ).toBeVisible();
   await capture(page, "14b-invoice-void");
 
   // Settings: invitation, one-time API key, webhook. Never screenshot secrets.
@@ -563,12 +729,18 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "PATCH",
     "/users/me",
     async () => {
-      await page.getByLabel("Full name").fill("FlowDesk Walkthrough User Updated");
+      await page
+        .getByLabel("Full name")
+        .fill("FlowDesk Walkthrough User Updated");
       await page.getByRole("button", { name: "Save profile" }).click();
     },
   );
-  expect((await profileUpdate.json()).full_name).toBe("FlowDesk Walkthrough User Updated");
-  await expect(page.getByLabel("Full name")).toHaveValue("FlowDesk Walkthrough User Updated");
+  expect((await profileUpdate.json()).full_name).toBe(
+    "FlowDesk Walkthrough User Updated",
+  );
+  await expect(page.getByLabel("Full name")).toHaveValue(
+    "FlowDesk Walkthrough User Updated",
+  );
   await capture(page, "15-settings-profile");
   await page.getByRole("tab", { name: "Workspace" }).click();
   const workspaceUpdate = await expectSuccessfulApiAction(
@@ -576,12 +748,18 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "PATCH",
     "/tenants/current",
     async () => {
-      await page.getByLabel("Workspace name").fill("FlowDesk Visual Walkthrough Updated");
+      await page
+        .getByLabel("Workspace name")
+        .fill("FlowDesk Visual Walkthrough Updated");
       await page.getByRole("button", { name: "Save", exact: true }).click();
     },
   );
-  expect((await workspaceUpdate.json()).name).toBe("FlowDesk Visual Walkthrough Updated");
-  await expect(page.getByLabel("Workspace name")).toHaveValue("FlowDesk Visual Walkthrough Updated");
+  expect((await workspaceUpdate.json()).name).toBe(
+    "FlowDesk Visual Walkthrough Updated",
+  );
+  await expect(page.getByLabel("Workspace name")).toHaveValue(
+    "FlowDesk Visual Walkthrough Updated",
+  );
   await capture(page, "16-settings-workspace");
 
   await page.getByRole("tab", { name: "Team" }).click();
@@ -621,22 +799,36 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     const emailOffset = logText.lastIndexOf("to=" + acceptedInviteEmail);
     if (emailOffset < 0) return "";
     const emailLog = logText.slice(emailOffset);
-    return emailLog.match(/Accept the invitation: http:\/\/localhost:5173\/accept-invite\?token=([A-Za-z0-9_-]+)/)?.[1] ?? "";
+    return (
+      emailLog.match(
+        /Accept the invitation: http:\/\/localhost:5173\/accept-invite\?token=([A-Za-z0-9_-]+)/,
+      )?.[1] ?? ""
+    );
   };
   await expect.poll(readInvitationToken, { timeout: 15_000 }).not.toBe("");
   const acceptedInviteToken = await readInvitationToken();
 
   const inviteeContext = await browser.newContext();
   const inviteePage = await inviteeContext.newPage();
-  await inviteePage.goto("http://localhost:5173/accept-invite?token=" + encodeURIComponent(acceptedInviteToken));
-  await expect(inviteePage.getByRole("heading", { name: /Join FlowDesk Visual Walkthrough/i })).toBeVisible();
+  await inviteePage.goto(
+    "http://localhost:5173/accept-invite?token=" +
+      encodeURIComponent(acceptedInviteToken),
+  );
+  await expect(
+    inviteePage.getByRole("heading", {
+      name: /Join FlowDesk Visual Walkthrough/i,
+    }),
+  ).toBeVisible();
   await inviteePage.getByLabel("Your name").fill("FlowDesk Invited Member");
   await inviteePage.getByLabel("Choose a password").fill("invitee-pass-123");
   const accepted = await expectSuccessfulApiAction(
     inviteePage,
     "POST",
     "/tenants/invitations/accept",
-    () => inviteePage.getByRole("button", { name: /create account & join/i }).click(),
+    () =>
+      inviteePage
+        .getByRole("button", { name: /create account & join/i })
+        .click(),
   );
   expect(await accepted.json()).toHaveProperty("access_token");
   await expect(inviteePage).toHaveURL(/dashboard$/);
@@ -645,23 +837,33 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
 
   // Reload the owner workspace so the member list is fetched afresh from the API.
   await page.reload();
-  const membersResponsePromise = page.waitForResponse((response) =>
-    response.request().method() === "GET" &&
-    new URL(response.url()).pathname === "/api/v1/tenants/members",
+  const membersResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === "GET" &&
+      new URL(response.url()).pathname === "/api/v1/tenants/members",
   );
   await page.getByRole("tab", { name: "Team" }).click();
   const membersResponse = await membersResponsePromise;
   expect(membersResponse.ok()).toBeTruthy();
   const teamMembers = await membersResponse.json();
-  const acceptedMember = teamMembers.find((member: { user: { email: string }; membership_id: string }) =>
-    member.user.email === acceptedInviteEmail
+  const acceptedMember = teamMembers.find(
+    (member: { user: { email: string }; membership_id: string }) =>
+      member.user.email === acceptedInviteEmail,
   );
-  if (!acceptedMember) throw new Error("Accepted invitation did not create a workspace membership.");
+  if (!acceptedMember)
+    throw new Error(
+      "Accepted invitation did not create a workspace membership.",
+    );
   const invitedUserId = acceptedMember.user.id;
-  const acceptedMemberRow = page.getByText("FlowDesk Invited Member").locator("..").locator("..");
-  const memberRoleUpdate = page.waitForResponse((response) =>
-    response.request().method() === "PATCH" &&
-    new URL(response.url()).pathname === "/api/v1/tenants/members/" + acceptedMember.membership_id + "/role",
+  const acceptedMemberRow = page
+    .getByText("FlowDesk Invited Member")
+    .locator("..")
+    .locator("..");
+  const memberRoleUpdate = page.waitForResponse(
+    (response) =>
+      response.request().method() === "PATCH" &&
+      new URL(response.url()).pathname ===
+        "/api/v1/tenants/members/" + acceptedMember.membership_id + "/role",
   );
   await acceptedMemberRow.getByRole("combobox").click();
   await page.getByRole("option", { name: "Admin" }).click();
@@ -684,9 +886,11 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   );
   const revocableInvitation = await revocableInvite.json();
   const revocationRow = page.getByText(revokeEmail).locator("..").locator("..");
-  const revokeResponsePromise = page.waitForResponse((response) =>
-    response.request().method() === "DELETE" &&
-    new URL(response.url()).pathname === "/api/v1/tenants/invitations/" + revocableInvitation.id,
+  const revokeResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === "DELETE" &&
+      new URL(response.url()).pathname ===
+        "/api/v1/tenants/invitations/" + revocableInvitation.id,
   );
   await revocationRow.getByRole("button", { name: "Revoke" }).click();
   const revokeResponse = await revokeResponsePromise;
@@ -714,21 +918,39 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     const emailOffset = logText.lastIndexOf("to=" + removalMemberEmail);
     if (emailOffset < 0) return "";
     const emailLog = logText.slice(emailOffset);
-    return emailLog.match(/Accept the invitation: http:\/\/localhost:5173\/accept-invite\?token=([A-Za-z0-9_-]+)/)?.[1] ?? "";
+    return (
+      emailLog.match(
+        /Accept the invitation: http:\/\/localhost:5173\/accept-invite\?token=([A-Za-z0-9_-]+)/,
+      )?.[1] ?? ""
+    );
   };
   await expect.poll(readRemovalInviteToken, { timeout: 15_000 }).not.toBe("");
   const removalInviteToken = await readRemovalInviteToken();
   const removalMemberContext = await browser.newContext();
   const removalMemberPage = await removalMemberContext.newPage();
-  await removalMemberPage.goto("http://localhost:5173/accept-invite?token=" + encodeURIComponent(removalInviteToken));
-  await expect(removalMemberPage.getByRole("heading", { name: /Join FlowDesk Visual Walkthrough/i })).toBeVisible();
-  await removalMemberPage.getByLabel("Your name").fill("FlowDesk Member To Remove");
-  await removalMemberPage.getByLabel("Choose a password").fill("remove-member-pass-123");
+  await removalMemberPage.goto(
+    "http://localhost:5173/accept-invite?token=" +
+      encodeURIComponent(removalInviteToken),
+  );
+  await expect(
+    removalMemberPage.getByRole("heading", {
+      name: /Join FlowDesk Visual Walkthrough/i,
+    }),
+  ).toBeVisible();
+  await removalMemberPage
+    .getByLabel("Your name")
+    .fill("FlowDesk Member To Remove");
+  await removalMemberPage
+    .getByLabel("Choose a password")
+    .fill("remove-member-pass-123");
   const acceptedRemovalMember = await expectSuccessfulApiAction(
     removalMemberPage,
     "POST",
     "/tenants/invitations/accept",
-    () => removalMemberPage.getByRole("button", { name: /create account & join/i }).click(),
+    () =>
+      removalMemberPage
+        .getByRole("button", { name: /create account & join/i })
+        .click(),
   );
   expect(await acceptedRemovalMember.json()).toHaveProperty("access_token");
   await expect(removalMemberPage).toHaveURL(/dashboard$/);
@@ -736,9 +958,10 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
 
   // Verify the new membership via a fresh GET, then remove it through the Team UI.
   await page.reload();
-  const refreshedMembersPromise = page.waitForResponse((response) =>
-    response.request().method() === "GET" &&
-    new URL(response.url()).pathname === "/api/v1/tenants/members",
+  const refreshedMembersPromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === "GET" &&
+      new URL(response.url()).pathname === "/api/v1/tenants/members",
   );
   await page.getByRole("tab", { name: "Team" }).click();
   const refreshedMembersResponse = await refreshedMembersPromise;
@@ -748,25 +971,43 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     (member: { membership_id: string; user: { email: string } }) =>
       member.user.email === removalMemberEmail,
   );
-  if (!memberToRemove) throw new Error("Accepted removal-test invitation did not create a membership.");
-  const memberToRemoveRow = page.getByText("FlowDesk Member To Remove", { exact: true }).locator("..").locator("..");
+  if (!memberToRemove)
+    throw new Error(
+      "Accepted removal-test invitation did not create a membership.",
+    );
+  const memberToRemoveRow = page
+    .getByText("FlowDesk Member To Remove", { exact: true })
+    .locator("..")
+    .locator("..");
   await expect(memberToRemoveRow).toBeVisible();
   const removeMemberResponse = await expectSuccessfulApiAction(
     page,
     "DELETE",
     "/tenants/members/" + memberToRemove.membership_id,
-    () => memberToRemoveRow.getByRole("button", { name: "Remove FlowDesk Member To Remove", exact: true }).click(),
+    () =>
+      memberToRemoveRow
+        .getByRole("button", {
+          name: "Remove FlowDesk Member To Remove",
+          exact: true,
+        })
+        .click(),
   );
-  expect((await removeMemberResponse.json()).message).toMatch(/member removed/i);
+  expect((await removeMemberResponse.json()).message).toMatch(
+    /member removed/i,
+  );
   await expect(memberToRemoveRow).not.toBeVisible();
   await capture(page, "17e-team-member-removed");
 
   // Keep the one-time API-key response outside the primary Playwright-traced context.
   // This is still an authenticated real browser session against the same backend/database.
-  const apiKeyContext = await browser.newContext({ storageState: await page.context().storageState() });
+  const apiKeyContext = await browser.newContext({
+    storageState: await page.context().storageState(),
+  });
   const apiKeyPage = await apiKeyContext.newPage();
   await apiKeyPage.goto("http://localhost:5173/app/settings");
-  await expect(apiKeyPage.getByRole("heading", { name: "Settings" })).toBeVisible();
+  await expect(
+    apiKeyPage.getByRole("heading", { name: "Settings" }),
+  ).toBeVisible();
   await apiKeyPage.getByRole("tab", { name: /api keys/i }).click();
   await apiKeyPage.getByRole("button", { name: /new key/i }).click();
   await apiKeyPage.getByLabel("Name").fill("Walkthrough automation key");
@@ -777,22 +1018,34 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     () => apiKeyPage.getByRole("button", { name: /generate key/i }).click(),
   );
   const apiKeyData = await apiKeyCreation.json();
-  const apiKeyHasExpectedPrefix = typeof apiKeyData.plaintext_key === "string" && apiKeyData.plaintext_key.startsWith("fd_live_");
-  const apiKeyHasId = typeof apiKeyData.id === "string" && apiKeyData.id.length > 0;
-  const apiKeyCopyHeading = apiKeyPage.getByRole("heading", { name: /copy your api key/i });
+  const apiKeyHasExpectedPrefix =
+    typeof apiKeyData.plaintext_key === "string" &&
+    apiKeyData.plaintext_key.startsWith("fd_live_");
+  const apiKeyHasId =
+    typeof apiKeyData.id === "string" && apiKeyData.id.length > 0;
+  const apiKeyCopyHeading = apiKeyPage.getByRole("heading", {
+    name: /copy your api key/i,
+  });
   await expect(apiKeyCopyHeading).toBeVisible();
   const renderedSecret = apiKeyPage.getByRole("dialog").locator("code");
   await expect(renderedSecret).toBeVisible();
   // Mask the one-time key in this untraced test context too, before later actions.
-  await renderedSecret.evaluate((node) => { node.textContent = "[REDACTED]"; });
+  await renderedSecret.evaluate((node) => {
+    node.textContent = "[REDACTED]";
+  });
   const apiKeyCopyDialogWasVisible = await apiKeyCopyHeading.isVisible();
   await apiKeyPage.getByRole("button", { name: "Done" }).click();
   expect(apiKeyHasExpectedPrefix).toBe(true);
   expect(apiKeyHasId).toBe(true);
   expect(apiKeyCopyDialogWasVisible).toBe(true);
-  await expect(apiKeyPage.getByText("Walkthrough automation key", { exact: true })).toBeVisible();
+  await expect(
+    apiKeyPage.getByText("Walkthrough automation key", { exact: true }),
+  ).toBeVisible();
   await capture(apiKeyPage, "18-settings-api-keys");
-  const apiKeyRow = apiKeyPage.getByText("Walkthrough automation key", { exact: true }).locator("..").locator("..");
+  const apiKeyRow = apiKeyPage
+    .getByText("Walkthrough automation key", { exact: true })
+    .locator("..")
+    .locator("..");
   const revokedApiKey = await expectSuccessfulApiAction(
     apiKeyPage,
     "DELETE",
@@ -833,9 +1086,11 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     () => page.getByRole("button", { name: "Activate" }).click(),
   );
   expect((await activeWebhook.json()).is_active).toBe(true);
-  const deliveryHistory = page.waitForResponse((response) =>
-    response.request().method() === "GET" &&
-    new URL(response.url()).pathname === "/api/v1/webhooks/" + webhookData.id + "/deliveries",
+  const deliveryHistory = page.waitForResponse(
+    (response) =>
+      response.request().method() === "GET" &&
+      new URL(response.url()).pathname ===
+        "/api/v1/webhooks/" + webhookData.id + "/deliveries",
   );
   await page.getByRole("button", { name: "Delivery history" }).click();
   expect((await deliveryHistory).ok()).toBeTruthy();
@@ -844,7 +1099,8 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
 
   // Verify deletion with a second disposable configuration; keep the primary webhook active.
   await page.getByRole("button", { name: "Hide delivery history" }).click();
-  const disposableWebhookUrl = "https://hooks.example.com/flowdesk-delete-walkthrough";
+  const disposableWebhookUrl =
+    "https://hooks.example.com/flowdesk-delete-walkthrough";
   await page.getByRole("button", { name: /new webhook/i }).click();
   await page.getByLabel("Target URL").fill(disposableWebhookUrl);
   await page.getByRole("button", { name: "task.updated", exact: true }).click();
@@ -860,18 +1116,24 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     page,
     "DELETE",
     "/webhooks/" + disposableWebhook.id,
-    () => page.getByRole("button", { name: "Delete webhook " + disposableWebhookUrl }).click(),
+    () =>
+      page
+        .getByRole("button", { name: "Delete webhook " + disposableWebhookUrl })
+        .click(),
   );
   expect((await deletedWebhook.json()).message).toMatch(/deleted/i);
-  await expect(page.getByText(disposableWebhookUrl, { exact: true })).toHaveCount(0);
+  await expect(
+    page.getByText(disposableWebhookUrl, { exact: true }),
+  ).toHaveCount(0);
   await capture(page, "19b-settings-webhook-deleted");
 
   // Global search and notifications use the backend API, not an in-browser fixture.
   await page.keyboard.press("Control+k");
   const searchInput = page.getByPlaceholder(/search clients, projects/i);
-  const searchResponsePromise = page.waitForResponse((response) =>
-    response.request().method() === "GET" &&
-    new URL(response.url()).pathname === "/api/v1/search",
+  const searchResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === "GET" &&
+      new URL(response.url()).pathname === "/api/v1/search",
   );
   await searchInput.fill(projectName);
   const searchResponse = await searchResponsePromise;
@@ -880,9 +1142,10 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   await capture(page, "20-global-search");
 
   await page.keyboard.press("Escape");
-  const activityResponsePromise = page.waitForResponse((response) =>
-    response.request().method() === "GET" &&
-    new URL(response.url()).pathname === "/api/v1/activity",
+  const activityResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === "GET" &&
+      new URL(response.url()).pathname === "/api/v1/activity",
   );
   await page.getByRole("link", { name: "Activity" }).click();
   await expect(page.getByRole("heading", { name: "Activity" })).toBeVisible();
@@ -890,7 +1153,12 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   expect(activityResponse.ok()).toBeTruthy();
   const activityItems = await activityResponse.json();
   expect(activityItems.length).toBeGreaterThan(0);
-  expect(activityItems.some((item: { entity_label?: string }) => item.entity_label === "walkthrough-evidence.txt")).toBeTruthy();
+  expect(
+    activityItems.some(
+      (item: { entity_label?: string }) =>
+        item.entity_label === "walkthrough-evidence.txt",
+    ),
+  ).toBeTruthy();
   await capture(page, "21-activity-feed");
 
   // Assign two real tasks to the invited member through the task-detail UI. The backend
@@ -905,7 +1173,10 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
       "POST",
       "/tasks",
       async () => {
-        const backlogColumn = page.locator("text=Backlog").locator("..").locator("..");
+        const backlogColumn = page
+          .locator("text=Backlog")
+          .locator("..")
+          .locator("..");
         await backlogColumn.getByRole("button", { name: /add task/i }).click();
         await page.getByPlaceholder("Task title...").fill(title);
         await page.getByRole("button", { name: "Create task" }).click();
@@ -920,56 +1191,79 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
       "/tasks/" + createdTask.id,
       async () => {
         await page.getByRole("combobox", { name: "Assignee" }).click();
-        await page.getByRole("option", { name: /FlowDesk Invited Member/ }).click();
+        await page
+          .getByRole("option", { name: /FlowDesk Invited Member/ })
+          .click();
       },
     );
     expect((await assignmentResponse.json()).assignee_id).toBe(invitedUserId);
-    if (title === "Notification individual read") await capture(page, "06b-task-assigned");
+    if (title === "Notification individual read")
+      await capture(page, "06b-task-assigned");
     await page.keyboard.press("Escape");
     return createdTask;
   };
 
-  const individualReadTask = await assignTaskToInvitee("Notification individual read");
+  const individualReadTask = await assignTaskToInvitee(
+    "Notification individual read",
+  );
   const markAllReadTask = await assignTaskToInvitee("Notification bulk read");
 
   // Reload the invitee session so its notification queries read the task-assignment rows
   // just created in PostgreSQL by the owner session.
-  const inviteeNotificationListPromise = inviteePage.waitForResponse((response) =>
-    response.request().method() === "GET" &&
-    new URL(response.url()).pathname === "/api/v1/notifications",
+  const inviteeNotificationListPromise = inviteePage.waitForResponse(
+    (response) =>
+      response.request().method() === "GET" &&
+      new URL(response.url()).pathname === "/api/v1/notifications",
   );
   await inviteePage.reload();
   const inviteeNotificationList = await inviteeNotificationListPromise;
   expect(inviteeNotificationList.ok()).toBeTruthy();
   const inviteeNotificationData = await inviteeNotificationList.json();
   const individualNotification = inviteeNotificationData.items.find(
-    (item: { id: string; title: string }) => item.title.includes(individualReadTask.title),
+    (item: { id: string; title: string }) =>
+      item.title.includes(individualReadTask.title),
   );
   const markAllNotification = inviteeNotificationData.items.find(
-    (item: { id: string; title: string }) => item.title.includes(markAllReadTask.title),
+    (item: { id: string; title: string }) =>
+      item.title.includes(markAllReadTask.title),
   );
   if (!individualNotification || !markAllNotification) {
-    throw new Error("Task assignment did not create both real invitee notifications.");
+    throw new Error(
+      "Task assignment did not create both real invitee notifications.",
+    );
   }
 
   await inviteePage.locator("button:has(svg.lucide-bell)").click();
   await expect(inviteePage.getByText("Notifications")).toBeVisible();
-  await expect(inviteePage.getByText(individualNotification.title, { exact: true })).toBeVisible();
-  await expect(inviteePage.getByText(markAllNotification.title, { exact: true })).toBeVisible();
+  await expect(
+    inviteePage.getByText(individualNotification.title, { exact: true }),
+  ).toBeVisible();
+  await expect(
+    inviteePage.getByText(markAllNotification.title, { exact: true }),
+  ).toBeVisible();
   await capture(inviteePage, "22-notifications");
 
   const individualRead = await expectSuccessfulApiAction(
     inviteePage,
     "POST",
     "/notifications/" + individualNotification.id + "/read",
-    () => inviteePage.getByText(individualNotification.title, { exact: true }).click(),
+    () =>
+      inviteePage
+        .getByText(individualNotification.title, { exact: true })
+        .click(),
   );
   expect((await individualRead.json()).is_read).toBe(true);
-  await expect(inviteePage).toHaveURL(new RegExp("/app/projects/" + project.id + "$"));
-  await expect(inviteePage.getByRole("heading", { name: projectName })).toBeVisible();
+  await expect(inviteePage).toHaveURL(
+    new RegExp("/app/projects/" + project.id + "$"),
+  );
+  await expect(
+    inviteePage.getByRole("heading", { name: projectName }),
+  ).toBeVisible();
 
   await inviteePage.locator("button:has(svg.lucide-bell)").click();
-  await expect(inviteePage.getByRole("button", { name: "Mark all read" })).toBeVisible();
+  await expect(
+    inviteePage.getByRole("button", { name: "Mark all read" }),
+  ).toBeVisible();
   const allRead = await expectSuccessfulApiAction(
     inviteePage,
     "POST",
@@ -977,17 +1271,34 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     () => inviteePage.getByRole("button", { name: "Mark all read" }).click(),
   );
   expect((await allRead.json()).message).toMatch(/marked as read/i);
-  await expect(inviteePage.getByRole("button", { name: "Mark all read" })).toHaveCount(0);
-  const finalNotificationState = await inviteePage.request.get("http://localhost:5173/api/v1/notifications", {
-    headers: { Authorization: "Bearer " + (await inviteePage.evaluate(() => {
-      const raw = localStorage.getItem("flowdesk-auth");
-      return raw ? JSON.parse(raw).state?.accessToken ?? "" : "";
-    })) },
-  });
+  await expect(
+    inviteePage.getByRole("button", { name: "Mark all read" }),
+  ).toHaveCount(0);
+  const finalNotificationState = await inviteePage.request.get(
+    "http://localhost:5173/api/v1/notifications",
+    {
+      headers: {
+        Authorization:
+          "Bearer " +
+          (await inviteePage.evaluate(() => {
+            const raw = localStorage.getItem("flowdesk-auth");
+            return raw ? (JSON.parse(raw).state?.accessToken ?? "") : "";
+          })),
+      },
+    },
+  );
   expect(finalNotificationState.ok()).toBeTruthy();
   const finalNotificationItems = (await finalNotificationState.json()).items;
-  expect(finalNotificationItems.find((item: { id: string }) => item.id === individualNotification.id)?.is_read).toBe(true);
-  expect(finalNotificationItems.find((item: { id: string }) => item.id === markAllNotification.id)?.is_read).toBe(true);
+  expect(
+    finalNotificationItems.find(
+      (item: { id: string }) => item.id === individualNotification.id,
+    )?.is_read,
+  ).toBe(true);
+  expect(
+    finalNotificationItems.find(
+      (item: { id: string }) => item.id === markAllNotification.id,
+    )?.is_read,
+  ).toBe(true);
   await capture(inviteePage, "23-notifications-read-state");
   await inviteeContext.close();
 
@@ -1001,9 +1312,13 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     async () => {
       await page.getByRole("button", { name: "New project" }).click();
       await page.getByLabel("Name").fill(disposableProjectName);
-      await page.getByLabel("Description").fill("Initial disposable project description");
+      await page
+        .getByLabel("Description")
+        .fill("Initial disposable project description");
       await page.getByLabel("Billing type").click();
-      await page.getByRole("option", { name: "Non-billable", exact: true }).click();
+      await page
+        .getByRole("option", { name: "Non-billable", exact: true })
+        .click();
       await page.getByRole("button", { name: "Create project" }).click();
     },
   );
@@ -1011,7 +1326,9 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
   expect(disposableProject.name).toBe(disposableProjectName);
   expect(disposableProject.billing_type).toBe("non_billable");
   await page.getByText(disposableProjectName, { exact: true }).click();
-  await expect(page.getByRole("heading", { name: disposableProjectName })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: disposableProjectName }),
+  ).toBeVisible();
   const disposableProjectUpdate = await expectSuccessfulApiAction(
     page,
     "PATCH",
@@ -1019,26 +1336,38 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     async () => {
       await page.getByRole("button", { name: "Edit", exact: true }).click();
       const editDialog = page.getByRole("dialog");
-      await editDialog.getByLabel("Description").fill("Updated disposable project description");
+      await editDialog
+        .getByLabel("Description")
+        .fill("Updated disposable project description");
       await capture(page, "04c-project-edit-dialog");
       await editDialog.getByRole("button", { name: "Save changes" }).click();
     },
   );
-  expect((await disposableProjectUpdate.json()).description).toBe("Updated disposable project description");
+  expect((await disposableProjectUpdate.json()).description).toBe(
+    "Updated disposable project description",
+  );
   const deleteProjectResponse = await expectSuccessfulApiAction(
     page,
     "DELETE",
     "/projects/" + disposableProject.id,
     async () => {
-      await page.getByRole("button", { name: "Delete project", exact: true }).click();
+      await page
+        .getByRole("button", { name: "Delete project", exact: true })
+        .click();
       const confirmation = page.getByRole("dialog");
-      await expect(confirmation.getByText("Delete this project?")).toBeVisible();
-      await confirmation.getByRole("button", { name: "Delete project", exact: true }).click();
+      await expect(
+        confirmation.getByText("Delete this project?"),
+      ).toBeVisible();
+      await confirmation
+        .getByRole("button", { name: "Delete project", exact: true })
+        .click();
     },
   );
   expect((await deleteProjectResponse.json()).message).toMatch(/deleted/i);
   await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible();
-  await expect(page.getByText(disposableProjectName, { exact: true })).toHaveCount(0);
+  await expect(
+    page.getByText(disposableProjectName, { exact: true }),
+  ).toHaveCount(0);
   await capture(page, "04d-project-deleted");
 
   // Draft-invoice deletion is a separate lifecycle action; the main billing and paid
@@ -1052,9 +1381,18 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
       await page.getByRole("button", { name: /new invoice/i }).click();
       await page.getByLabel("Client").click();
       await page.getByRole("option", { name: clientName }).click();
-      await page.getByLabel(/description/i).first().fill("Disposable draft invoice");
-      await page.getByLabel(/quantity/i).first().fill("1");
-      await page.getByLabel(/unit price/i).first().fill("10");
+      await page
+        .getByLabel(/description/i)
+        .first()
+        .fill("Disposable draft invoice");
+      await page
+        .getByLabel(/quantity/i)
+        .first()
+        .fill("1");
+      await page
+        .getByLabel(/unit price/i)
+        .first()
+        .fill("10");
       await page.getByRole("button", { name: /create invoice/i }).click();
     },
   );
@@ -1065,14 +1403,22 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "DELETE",
     "/invoices/" + disposableDraftInvoice.id,
     async () => {
-      await page.getByRole("button", { name: "Delete invoice", exact: true }).click();
+      await page
+        .getByRole("button", { name: "Delete invoice", exact: true })
+        .click();
       const confirmation = page.getByRole("dialog");
-      await expect(confirmation.getByText("Delete this invoice?")).toBeVisible();
-      await confirmation.getByRole("button", { name: "Delete invoice", exact: true }).click();
+      await expect(
+        confirmation.getByText("Delete this invoice?"),
+      ).toBeVisible();
+      await confirmation
+        .getByRole("button", { name: "Delete invoice", exact: true })
+        .click();
     },
   );
   expect((await deletedDraftInvoice.json()).message).toMatch(/deleted/i);
-  await expect(page.getByText(disposableDraftInvoice.invoice_number, { exact: true })).toHaveCount(0);
+  await expect(
+    page.getByText(disposableDraftInvoice.invoice_number, { exact: true }),
+  ).toHaveCount(0);
   await capture(page, "14c-invoice-draft-deleted");
 
   // Full password-recovery path: use the backend-generated email token in an untraced
@@ -1086,22 +1432,35 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "/auth/forgot-password",
     async () => {
       await passwordResetPage.getByLabel("Email").fill(accountEmail);
-      await passwordResetPage.getByRole("button", { name: "Send reset link" }).click();
+      await passwordResetPage
+        .getByRole("button", { name: "Send reset link" })
+        .click();
     },
   );
   expect((await passwordResetRequest.json()).message).toMatch(/reset link/i);
-  await expect(passwordResetPage.getByRole("heading", { name: "Check your email" })).toBeVisible();
+  await expect(
+    passwordResetPage.getByRole("heading", { name: "Check your email" }),
+  ).toBeVisible();
   const readPasswordResetToken = async () => {
     const logText = await readFile(backendLogPath!, "utf8");
     const emailOffset = logText.lastIndexOf("to=" + accountEmail);
     if (emailOffset < 0) return "";
     const resetMail = logText.slice(emailOffset);
-    return resetMail.match(/Reset your password: http:\/\/localhost:5173\/reset-password\?token=([A-Za-z0-9_-]+)/)?.[1] ?? "";
+    return (
+      resetMail.match(
+        /Reset your password: http:\/\/localhost:5173\/reset-password\?token=([A-Za-z0-9_-]+)/,
+      )?.[1] ?? ""
+    );
   };
   await expect.poll(readPasswordResetToken, { timeout: 15_000 }).not.toBe("");
   const passwordResetToken = await readPasswordResetToken();
-  await passwordResetPage.goto("http://localhost:5173/reset-password?token=" + encodeURIComponent(passwordResetToken));
-  await expect(passwordResetPage.getByRole("heading", { name: "Set a new password" })).toBeVisible();
+  await passwordResetPage.goto(
+    "http://localhost:5173/reset-password?token=" +
+      encodeURIComponent(passwordResetToken),
+  );
+  await expect(
+    passwordResetPage.getByRole("heading", { name: "Set a new password" }),
+  ).toBeVisible();
   await capture(passwordResetPage, "24-valid-reset-token");
   const resetPassword = "Flowdesk-reset-password-456";
   const passwordResetResponse = await expectSuccessfulApiAction(
@@ -1110,10 +1469,14 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "/auth/reset-password",
     async () => {
       await passwordResetPage.getByLabel("New password").fill(resetPassword);
-      await passwordResetPage.getByRole("button", { name: "Reset password" }).click();
+      await passwordResetPage
+        .getByRole("button", { name: "Reset password" })
+        .click();
     },
   );
-  expect((await passwordResetResponse.json()).message).toMatch(/reset successfully/i);
+  expect((await passwordResetResponse.json()).message).toMatch(
+    /reset successfully/i,
+  );
   await expect(passwordResetPage).toHaveURL(/\/login$/);
   await capture(passwordResetPage, "25-password-reset-success");
   const loginAfterReset = await expectSuccessfulApiAction(
@@ -1146,7 +1509,9 @@ test("captures real FlowDesk browser actions, API responses, and persistent Post
     "/api/v1/search",
   ]) {
     expect(
-      observedApiResponses.some((r) => r.path === expectedPath && r.status >= 200 && r.status < 300),
+      observedApiResponses.some(
+        (r) => r.path === expectedPath && r.status >= 200 && r.status < 300,
+      ),
       `Expected a successful real API response for ${expectedPath}`,
     ).toBeTruthy();
   }

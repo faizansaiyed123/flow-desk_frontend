@@ -9,7 +9,11 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useDroppable } from "@dnd-kit/core";
 import { Plus } from "lucide-react";
@@ -30,11 +34,23 @@ const COLUMNS: { status: TaskStatus; label: string }[] = [
   { status: "done", label: "Done" },
 ];
 
-const PRIORITY_VARIANT: Record<string, "neutral" | "brass" | "moss" | "clay" | "sky"> = {
-  low: "neutral", medium: "sky", high: "brass", urgent: "clay",
+const PRIORITY_VARIANT: Record<
+  string,
+  "neutral" | "brass" | "moss" | "clay" | "sky"
+> = {
+  low: "neutral",
+  medium: "sky",
+  high: "brass",
+  urgent: "clay",
 };
 
-export function KanbanBoard({ projectId, onOpenTask }: { projectId: string; onOpenTask: (taskId: string) => void }) {
+export function KanbanBoard({
+  projectId,
+  onOpenTask,
+}: {
+  projectId: string;
+  onOpenTask: (taskId: string) => void;
+}) {
   const { data: board, isLoading } = useKanbanBoard(projectId);
   const moveTask = useMoveTask(projectId);
   const createTask = useCreateTask(projectId);
@@ -42,10 +58,14 @@ export function KanbanBoard({ projectId, onOpenTask }: { projectId: string; onOp
   const [addingTo, setAddingTo] = useState<TaskStatus | null>(null);
   const [newTitle, setNewTitle] = useState("");
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+  );
 
   if (isLoading || !board) {
-    return <div className="h-96 animate-pulse rounded-[var(--radius-card)] bg-ink-900" />;
+    return (
+      <div className="h-96 animate-pulse rounded-[var(--radius-card)] bg-ink-900" />
+    );
   }
 
   function findTask(id: string): Task | undefined {
@@ -71,41 +91,78 @@ export function KanbanBoard({ projectId, onOpenTask }: { projectId: string; onOp
     const overId = String(over.id);
     const overColumn = COLUMNS.find((c) => c.status === overId);
     const overTask = overColumn ? undefined : findTask(overId);
-    const targetStatus = overColumn?.status ?? overTask?.status ?? draggedTask.status;
+    const targetStatus =
+      overColumn?.status ?? overTask?.status ?? draggedTask.status;
 
-    const columnTasks = board!.columns.find((c) => c.status === targetStatus)?.tasks ?? [];
+    const columnTasks =
+      board!.columns.find((c) => c.status === targetStatus)?.tasks ?? [];
     let newPosition: number;
     if (overTask) {
       const overIndex = columnTasks.findIndex((t) => t.id === overTask.id);
       const prevTask = columnTasks[overIndex - 1];
-      newPosition = prevTask ? (prevTask.position + overTask.position) / 2 : overTask.position - 1024;
+      newPosition = prevTask
+        ? (prevTask.position + overTask.position) / 2
+        : overTask.position - 1024;
     } else {
       const last = columnTasks[columnTasks.length - 1];
       newPosition = last ? last.position + 1024 : 1024;
     }
 
-    if (targetStatus === draggedTask.status && Math.abs(newPosition - draggedTask.position) < 0.001) return;
-    moveTask.mutate({ id: draggedTask.id, status: targetStatus, position: newPosition });
+    if (
+      targetStatus === draggedTask.status &&
+      Math.abs(newPosition - draggedTask.position) < 0.001
+    )
+      return;
+    moveTask.mutate({
+      id: draggedTask.id,
+      status: targetStatus,
+      position: newPosition,
+    });
   }
 
   function submitNewTask(status: TaskStatus) {
-    if (!newTitle.trim()) { setAddingTo(null); return; }
-    createTask.mutate({ project_id: projectId, title: newTitle.trim(), status });
+    if (!newTitle.trim()) {
+      setAddingTo(null);
+      return;
+    }
+    createTask.mutate({
+      project_id: projectId,
+      title: newTitle.trim(),
+      status,
+    });
     setNewTitle("");
     setAddingTo(null);
   }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
       <div className="flex gap-4 overflow-x-auto pb-4">
         {COLUMNS.map((col) => {
-          const tasks = board.columns.find((c) => c.status === col.status)?.tasks ?? [];
+          const tasks =
+            board.columns.find((c) => c.status === col.status)?.tasks ?? [];
           return (
-            <DroppableColumn key={col.status} status={col.status} label={col.label} count={tasks.length}>
-              <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+            <DroppableColumn
+              key={col.status}
+              status={col.status}
+              label={col.label}
+              count={tasks.length}
+            >
+              <SortableContext
+                items={tasks.map((t) => t.id)}
+                strategy={verticalListSortingStrategy}
+              >
                 <div className="space-y-2">
                   {tasks.map((task) => (
-                    <SortableTaskCard key={task.id} task={task} onOpen={() => onOpenTask(task.id)} />
+                    <SortableTaskCard
+                      key={task.id}
+                      task={task}
+                      onOpen={() => onOpenTask(task.id)}
+                    />
                   ))}
                 </div>
               </SortableContext>
@@ -124,8 +181,17 @@ export function KanbanBoard({ projectId, onOpenTask }: { projectId: string; onOp
                         if (e.key === "Escape") setAddingTo(null);
                       }}
                     />
-                    <Label htmlFor={`new-task-title-${col.status}`} className="sr-only">Title</Label>
-                    <Button size="sm" disabled={!newTitle.trim()} onClick={() => submitNewTask(col.status)}>
+                    <Label
+                      htmlFor={`new-task-title-${col.status}`}
+                      className="sr-only"
+                    >
+                      Title
+                    </Label>
+                    <Button
+                      size="sm"
+                      disabled={!newTitle.trim()}
+                      onClick={() => submitNewTask(col.status)}
+                    >
                       Create task
                     </Button>
                   </div>
@@ -149,15 +215,23 @@ export function KanbanBoard({ projectId, onOpenTask }: { projectId: string; onOp
 }
 
 function DroppableColumn({
-  status, label, count, children,
-}: { status: TaskStatus; label: string; count: number; children: React.ReactNode }) {
+  status,
+  label,
+  count,
+  children,
+}: {
+  status: TaskStatus;
+  label: string;
+  count: number;
+  children: React.ReactNode;
+}) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   return (
     <div
       ref={setNodeRef}
       className={cn(
         "flex w-72 shrink-0 flex-col rounded-[var(--radius-card)] border border-line-700 bg-ink-900/50 p-2 transition-colors",
-        isOver && "border-brass-500/50 bg-ink-900"
+        isOver && "border-brass-500/50 bg-ink-900",
       )}
     >
       <div className="flex items-center justify-between px-2 py-1.5">
@@ -169,15 +243,33 @@ function DroppableColumn({
   );
 }
 
-function SortableTaskCard({ task, onOpen }: { task: Task; onOpen: () => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
+function SortableTaskCard({
+  task,
+  onOpen,
+}: {
+  task: Task;
+  onOpen: () => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id });
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(isDragging && "opacity-40")}
     >
-      <TaskCard task={task} onOpen={onOpen} dragAttributes={attributes} dragListeners={listeners} />
+      <TaskCard
+        task={task}
+        onOpen={onOpen}
+        dragAttributes={attributes}
+        dragListeners={listeners}
+      />
     </div>
   );
 }
@@ -193,7 +285,10 @@ function TaskCard({
   dragAttributes?: React.HTMLAttributes<HTMLElement>;
   dragListeners?: React.HTMLAttributes<HTMLElement>;
 }) {
-  const overdue = task.due_date && task.status !== "done" && new Date(task.due_date) < new Date();
+  const overdue =
+    task.due_date &&
+    task.status !== "done" &&
+    new Date(task.due_date) < new Date();
   return (
     <button
       type="button"
@@ -205,9 +300,18 @@ function TaskCard({
     >
       <p className="text-sm text-paper-100">{task.title}</p>
       <div className="mt-2 flex items-center justify-between">
-        <Badge variant={PRIORITY_VARIANT[task.priority]} className="capitalize">{task.priority}</Badge>
+        <Badge variant={PRIORITY_VARIANT[task.priority]} className="capitalize">
+          {task.priority}
+        </Badge>
         {task.due_date && (
-          <span className={cn("text-xs", overdue ? "text-clay-400" : "text-paper-500")}>{formatDate(task.due_date)}</span>
+          <span
+            className={cn(
+              "text-xs",
+              overdue ? "text-clay-400" : "text-paper-500",
+            )}
+          >
+            {formatDate(task.due_date)}
+          </span>
         )}
       </div>
     </button>

@@ -1,6 +1,10 @@
 import { useRef, useState } from "react";
 import { Download, FileText, Trash2, Upload } from "lucide-react";
-import { useAttachments, useDeleteAttachment, useUploadAttachment } from "@/hooks/use-attachments";
+import {
+  useAttachments,
+  useDeleteAttachment,
+  useUploadAttachment,
+} from "@/hooks/use-attachments";
 import { api } from "@/lib/api-client";
 import { toast } from "@/stores/toast-store";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +28,9 @@ export function ProjectAttachments({ projectId }: { projectId: string }) {
   async function downloadAttachment(attachment: Attachment) {
     setDownloadingId(attachment.id);
     try {
-      const blob = await api.get<Blob>("/attachments/" + attachment.id + "/download");
+      const blob = await api.get<Blob>(
+        "/attachments/" + attachment.id + "/download",
+      );
       const objectUrl = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = objectUrl;
@@ -33,11 +39,16 @@ export function ProjectAttachments({ projectId }: { projectId: string }) {
       anchor.click();
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-      toast({ title: "Download started", description: attachment.file_name, variant: "success" });
+      toast({
+        title: "Download started",
+        description: attachment.file_name,
+        variant: "success",
+      });
     } catch (error) {
       toast({
         title: "Couldn't download file",
-        description: error instanceof Error ? error.message : "Unexpected download error.",
+        description:
+          error instanceof Error ? error.message : "Unexpected download error.",
         variant: "error",
       });
     } finally {
@@ -50,7 +61,9 @@ export function ProjectAttachments({ projectId }: { projectId: string }) {
       <CardHeader className="flex flex-row items-center justify-between gap-4">
         <div>
           <CardTitle>Project files</CardTitle>
-          <p className="mt-1 text-xs text-paper-500">Upload, download, and remove files attached to this project.</p>
+          <p className="mt-1 text-xs text-paper-500">
+            Upload, download, and remove files attached to this project.
+          </p>
         </div>
         <div>
           <input
@@ -65,16 +78,27 @@ export function ProjectAttachments({ projectId }: { projectId: string }) {
               if (selected) upload.mutate(selected);
             }}
           />
-          <Button onClick={() => fileInput.current?.click()} loading={upload.isPending}>
+          <Button
+            onClick={() => fileInput.current?.click()}
+            loading={upload.isPending}
+          >
             <Upload className="h-4 w-4" /> Upload file
           </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-2 pt-2">
-        {isLoading && <div className="h-20 animate-pulse rounded-[var(--radius-card)] bg-ink-900" />}
-        {isError && <p role="alert" className="text-sm text-clay-400">Files could not be loaded. Please try again.</p>}
+        {isLoading && (
+          <div className="h-20 animate-pulse rounded-[var(--radius-card)] bg-ink-900" />
+        )}
+        {isError && (
+          <p role="alert" className="text-sm text-clay-400">
+            Files could not be loaded. Please try again.
+          </p>
+        )}
         {!isLoading && !isError && (attachments?.length ?? 0) === 0 && (
-          <p className="py-8 text-center text-sm text-paper-500">No files attached yet.</p>
+          <p className="py-8 text-center text-sm text-paper-500">
+            No files attached yet.
+          </p>
         )}
         {attachments?.map((attachment) => (
           <div
@@ -87,8 +111,13 @@ export function ProjectAttachments({ projectId }: { projectId: string }) {
                 <FileText className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <p className="break-all text-sm text-paper-100">{attachment.file_name}</p>
-                <p className="mt-0.5 text-xs text-paper-500">{formatBytes(attachment.size_bytes)} · {attachment.content_type}</p>
+                <p className="break-all text-sm text-paper-100">
+                  {attachment.file_name}
+                </p>
+                <p className="mt-0.5 text-xs text-paper-500">
+                  {formatBytes(attachment.size_bytes)} ·{" "}
+                  {attachment.content_type}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">

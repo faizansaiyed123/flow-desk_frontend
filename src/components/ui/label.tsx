@@ -9,7 +9,10 @@ export function Label({
   return (
     <LabelPrimitive.Root
       htmlFor={htmlFor}
-      className={cn("text-sm font-medium text-paper-300 mb-1.5 block", className)}
+      className={cn(
+        "text-sm font-medium text-paper-300 mb-1.5 block",
+        className,
+      )}
       {...props}
     />
   );

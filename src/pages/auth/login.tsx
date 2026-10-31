@@ -30,23 +30,45 @@ export function LoginPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div>
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" autoComplete="email" placeholder="you@company.com" {...register("email")} />
-          {errors.email && <p className="mt-1 text-xs text-clay-400">{errors.email.message}</p>}
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@company.com"
+            {...register("email")}
+          />
+          {errors.email && (
+            <p className="mt-1 text-xs text-clay-400">{errors.email.message}</p>
+          )}
         </div>
         <div>
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
-            <Link to="/forgot-password" className="mb-1.5 text-xs text-brass-400 hover:underline">
+            <Link
+              to="/forgot-password"
+              className="mb-1.5 text-xs text-brass-400 hover:underline"
+            >
               Forgot password?
             </Link>
           </div>
-          <Input id="password" type="password" autoComplete="current-password" {...register("password")} />
-          {errors.password && <p className="mt-1 text-xs text-clay-400">{errors.password.message}</p>}
+          <Input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            {...register("password")}
+          />
+          {errors.password && (
+            <p className="mt-1 text-xs text-clay-400">
+              {errors.password.message}
+            </p>
+          )}
         </div>
 
         {login.isError && (
           <p className="rounded-[var(--radius-card)] border border-clay-500/30 bg-clay-950 px-3 py-2 text-sm text-clay-400">
-            {login.error instanceof ApiError ? login.error.detail : "Something went wrong."}
+            {login.error instanceof ApiError
+              ? login.error.detail
+              : "Something went wrong."}
           </p>
         )}
 

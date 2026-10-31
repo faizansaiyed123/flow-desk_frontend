@@ -53,19 +53,28 @@ function buildUrl(path: string, params?: RequestOptions["params"]): string {
   return url.pathname + url.search;
 }
 
-async function request<T>(path: string, options: RequestOptions = {}, isRetry = false): Promise<T> {
+async function request<T>(
+  path: string,
+  options: RequestOptions = {},
+  isRetry = false,
+): Promise<T> {
   const { method = "GET", body, params, isFormData, skipAuth } = options;
   const { accessToken, currentTenantId } = useAuthStore.getState();
 
   const headers: Record<string, string> = {};
   if (!isFormData) headers["Content-Type"] = "application/json";
-  if (accessToken && !skipAuth) headers["Authorization"] = `Bearer ${accessToken}`;
+  if (accessToken && !skipAuth)
+    headers["Authorization"] = `Bearer ${accessToken}`;
   if (currentTenantId) headers["X-Tenant-Id"] = currentTenantId;
 
   const res = await fetch(buildUrl(path, params), {
     method,
     headers,
-    body: body ? (isFormData ? (body as FormData) : JSON.stringify(body)) : undefined,
+    body: body
+      ? isFormData
+        ? (body as FormData)
+        : JSON.stringify(body)
+      : undefined,
   });
 
   if (res.status === 401 && !skipAuth && !isRetry && accessToken) {
@@ -94,7 +103,10 @@ async function request<T>(path: string, options: RequestOptions = {}, isRetry = 
 
   if (!res.ok) {
     const detail =
-      (data && typeof data === "object" && "detail" in data && typeof data.detail === "string"
+      (data &&
+      typeof data === "object" &&
+      "detail" in data &&
+      typeof data.detail === "string"
         ? data.detail
         : null) || "Something went wrong. Please try again.";
     throw new ApiError(res.status, detail);
@@ -104,9 +116,11 @@ async function request<T>(path: string, options: RequestOptions = {}, isRetry = 
 }
 
 export const api = {
-  get: <T>(path: string, params?: RequestOptions["params"]) => request<T>(path, { method: "GET", params }),
+  get: <T>(path: string, params?: RequestOptions["params"]) =>
+    request<T>(path, { method: "GET", params }),
   post: <T>(path: string, body?: unknown, options?: RequestOptions) =>
     request<T>(path, { method: "POST", body, ...options }),
-  patch: <T>(path: string, body?: unknown) => request<T>(path, { method: "PATCH", body }),
+  patch: <T>(path: string, body?: unknown) =>
+    request<T>(path, { method: "PATCH", body }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };

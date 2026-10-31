@@ -10,19 +10,41 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { InvoiceStatus } from "@/types/api";
 
-const STATUS_VARIANT: Record<InvoiceStatus, "neutral" | "brass" | "moss" | "clay" | "sky"> = {
-  draft: "neutral", sent: "sky", paid: "moss", overdue: "clay", void: "neutral",
+const STATUS_VARIANT: Record<
+  InvoiceStatus,
+  "neutral" | "brass" | "moss" | "clay" | "sky"
+> = {
+  draft: "neutral",
+  sent: "sky",
+  paid: "moss",
+  overdue: "clay",
+  void: "neutral",
 };
 
 export function InvoicesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { data, isLoading } = useInvoices({ status: statusFilter || undefined });
+  const { data, isLoading } = useInvoices({
+    status: statusFilter || undefined,
+  });
   const { data: clients } = useClients({});
   const createInvoice = useCreateManualInvoice();
   const navigate = useNavigate();
@@ -32,7 +54,9 @@ export function InvoicesPage() {
     return {
       client_id: "",
       issue_date: today.toISOString().slice(0, 10),
-      due_date: new Date(today.getTime() + 30 * 86400000).toISOString().slice(0, 10),
+      due_date: new Date(today.getTime() + 30 * 86400000)
+        .toISOString()
+        .slice(0, 10),
       tax_rate: 0,
       line_items: [{ description: "", quantity: 1, unit_price: 0 }],
     };
@@ -40,7 +64,10 @@ export function InvoicesPage() {
   const { register, handleSubmit, control, reset } = useForm({
     defaultValues: invoiceFormDefaults,
   });
-  const { fields, append, remove } = useFieldArray({ control, name: "line_items" });
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "line_items",
+  });
 
   function onSubmit(values: Record<string, unknown>) {
     createInvoice.mutate(values, {
@@ -60,11 +87,19 @@ export function InvoicesPage() {
         actions={
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button><Plus className="h-4 w-4" /> New invoice</Button>
+              <Button>
+                <Plus className="h-4 w-4" /> New invoice
+              </Button>
             </DialogTrigger>
             <DialogContent className="max-w-lg">
-              <DialogHeader><DialogTitle>New invoice</DialogTitle></DialogHeader>
-<form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+              <DialogHeader>
+                <DialogTitle>New invoice</DialogTitle>
+              </DialogHeader>
+              <form
+                onSubmit={handleSubmit(onSubmit)}
+                className="space-y-4"
+                noValidate
+              >
                 <div>
                   <Label htmlFor="client_id">Client</Label>
                   <Controller
@@ -72,10 +107,19 @@ export function InvoicesPage() {
                     name="client_id"
                     rules={{ required: true }}
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger id="client_id"><SelectValue placeholder="Select a client" /></SelectTrigger>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger id="client_id">
+                          <SelectValue placeholder="Select a client" />
+                        </SelectTrigger>
                         <SelectContent>
-                          {clients?.items.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                          {clients?.items.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     )}
@@ -84,15 +128,28 @@ export function InvoicesPage() {
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <Label htmlFor="issue_date">Issue date</Label>
-                    <Input id="issue_date" type="date" {...register("issue_date")} />
+                    <Input
+                      id="issue_date"
+                      type="date"
+                      {...register("issue_date")}
+                    />
                   </div>
                   <div>
                     <Label htmlFor="due_date">Due date</Label>
-                    <Input id="due_date" type="date" {...register("due_date")} />
+                    <Input
+                      id="due_date"
+                      type="date"
+                      {...register("due_date")}
+                    />
                   </div>
                   <div>
                     <Label htmlFor="tax_rate">Tax %</Label>
-                    <Input id="tax_rate" type="number" step="0.01" {...register("tax_rate")} />
+                    <Input
+                      id="tax_rate"
+                      type="number"
+                      step="0.01"
+                      {...register("tax_rate")}
+                    />
                   </div>
                 </div>
 
@@ -102,30 +159,87 @@ export function InvoicesPage() {
                     {fields.map((field, idx) => (
                       <div key={field.id} className="flex gap-2">
                         <div className="flex-1">
-                          <Label htmlFor={`line_items_${idx}_description`} className="sr-only">Description</Label>
-                          <Input id={`line_items_${idx}_description`} placeholder="Description" className="flex-1" {...register(`line_items.${idx}.description` as const, { required: true })} />
+                          <Label
+                            htmlFor={`line_items_${idx}_description`}
+                            className="sr-only"
+                          >
+                            Description
+                          </Label>
+                          <Input
+                            id={`line_items_${idx}_description`}
+                            placeholder="Description"
+                            className="flex-1"
+                            {...register(
+                              `line_items.${idx}.description` as const,
+                              { required: true },
+                            )}
+                          />
                         </div>
                         <div className="w-20">
-                          <Label htmlFor={`line_items_${idx}_quantity`} className="sr-only">Quantity</Label>
-                          <Input id={`line_items_${idx}_quantity`} type="number" step="0.01" placeholder="Qty" className="w-20" {...register(`line_items.${idx}.quantity` as const, { required: true })} />
+                          <Label
+                            htmlFor={`line_items_${idx}_quantity`}
+                            className="sr-only"
+                          >
+                            Quantity
+                          </Label>
+                          <Input
+                            id={`line_items_${idx}_quantity`}
+                            type="number"
+                            step="0.01"
+                            placeholder="Qty"
+                            className="w-20"
+                            {...register(
+                              `line_items.${idx}.quantity` as const,
+                              { required: true },
+                            )}
+                          />
                         </div>
                         <div className="w-24">
-                          <Label htmlFor={`line_items_${idx}_unit_price`} className="sr-only">Unit price</Label>
-                          <Input id={`line_items_${idx}_unit_price`} type="number" step="0.01" placeholder="Price" className="w-24" {...register(`line_items.${idx}.unit_price` as const, { required: true })} />
+                          <Label
+                            htmlFor={`line_items_${idx}_unit_price`}
+                            className="sr-only"
+                          >
+                            Unit price
+                          </Label>
+                          <Input
+                            id={`line_items_${idx}_unit_price`}
+                            type="number"
+                            step="0.01"
+                            placeholder="Price"
+                            className="w-24"
+                            {...register(
+                              `line_items.${idx}.unit_price` as const,
+                              { required: true },
+                            )}
+                          />
                         </div>
-                        <button type="button" onClick={() => remove(idx)} className="text-paper-500 hover:text-clay-400 self-center">
+                        <button
+                          type="button"
+                          onClick={() => remove(idx)}
+                          className="text-paper-500 hover:text-clay-400 self-center"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     ))}
                   </div>
-                  <Button type="button" variant="ghost" size="sm" className="mt-2" onClick={() => append({ description: "", quantity: 1, unit_price: 0 })}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() =>
+                      append({ description: "", quantity: 1, unit_price: 0 })
+                    }
+                  >
                     <Plus className="h-3.5 w-3.5" /> Add line item
                   </Button>
                 </div>
 
                 <DialogFooter>
-                  <Button type="submit" loading={createInvoice.isPending}>Create invoice</Button>
+                  <Button type="submit" loading={createInvoice.isPending}>
+                    Create invoice
+                  </Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -139,7 +253,9 @@ export function InvoicesPage() {
             key={s || "all"}
             onClick={() => setStatusFilter(s)}
             className={`rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors ${
-              statusFilter === s ? "bg-brass-500 text-ink-950" : "bg-ink-800 text-paper-400 hover:text-paper-100"
+              statusFilter === s
+                ? "bg-brass-500 text-ink-950"
+                : "bg-ink-800 text-paper-400 hover:text-paper-100"
             }`}
           >
             {s || "All"}
@@ -147,10 +263,16 @@ export function InvoicesPage() {
         ))}
       </div>
 
-      {isLoading && <div className="h-48 animate-pulse rounded-[var(--radius-card)] bg-ink-900" />}
+      {isLoading && (
+        <div className="h-48 animate-pulse rounded-[var(--radius-card)] bg-ink-900" />
+      )}
 
       {!isLoading && data?.items.length === 0 && (
-        <EmptyState icon={Receipt} title="No invoices yet" description="Create your first invoice manually, or generate one from unbilled time on a project." />
+        <EmptyState
+          icon={Receipt}
+          title="No invoices yet"
+          description="Create your first invoice manually, or generate one from unbilled time on a project."
+        />
       )}
 
       {!isLoading && data && data.items.length > 0 && (
@@ -167,12 +289,31 @@ export function InvoicesPage() {
             </thead>
             <tbody>
               {data.items.map((invoice) => (
-                <tr key={invoice.id} onClick={() => navigate(`/app/invoices/${invoice.id}`)} className="cursor-pointer border-b border-line-700 last:border-0 hover:bg-ink-900">
-                  <td className="px-4 py-3 font-medium text-paper-100">{invoice.invoice_number}</td>
-                  <td className="px-4 py-3 text-paper-400">{formatDate(invoice.issue_date)}</td>
-                  <td className="px-4 py-3 text-paper-400">{formatDate(invoice.due_date)}</td>
-                  <td className="px-4 py-3 text-right tabular text-paper-100">{formatCurrency(invoice.total)}</td>
-                  <td className="px-4 py-3 text-right"><Badge variant={STATUS_VARIANT[invoice.status]} className="capitalize">{invoice.status}</Badge></td>
+                <tr
+                  key={invoice.id}
+                  onClick={() => navigate(`/app/invoices/${invoice.id}`)}
+                  className="cursor-pointer border-b border-line-700 last:border-0 hover:bg-ink-900"
+                >
+                  <td className="px-4 py-3 font-medium text-paper-100">
+                    {invoice.invoice_number}
+                  </td>
+                  <td className="px-4 py-3 text-paper-400">
+                    {formatDate(invoice.issue_date)}
+                  </td>
+                  <td className="px-4 py-3 text-paper-400">
+                    {formatDate(invoice.due_date)}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular text-paper-100">
+                    {formatCurrency(invoice.total)}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Badge
+                      variant={STATUS_VARIANT[invoice.status]}
+                      className="capitalize"
+                    >
+                      {invoice.status}
+                    </Badge>
+                  </td>
                 </tr>
               ))}
             </tbody>

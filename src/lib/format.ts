@@ -1,18 +1,28 @@
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(amount);
 }
 
 export function formatDate(value: string | null | undefined): string {
   if (!value) return "\u2014";
   const date = new Date(value);
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(date);
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
 }
 
 export function formatDateTime(value: string | null | undefined): string {
   if (!value) return "\u2014";
   const date = new Date(value);
   return new Intl.DateTimeFormat("en-US", {
-    month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
   }).format(date);
 }
 
