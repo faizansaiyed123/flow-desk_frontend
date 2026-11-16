@@ -123,8 +123,15 @@ export function HomePage() {
               Sign in
             </Link>
             <Link
+              to="/login"
+              className="inline-flex items-center gap-2 rounded-md border border-brass-400/50 px-3.5 py-2.5 text-sm font-semibold text-brass-300 transition-colors hover:bg-brass-950 sm:px-4"
+            >
+              Explore demo
+              <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
+            </Link>
+            <Link
               to="/register"
-              className="inline-flex items-center gap-2 rounded-md bg-brass-400 px-3.5 py-2.5 text-sm font-semibold text-ink-950 transition-colors hover:bg-brass-300 sm:px-4"
+              className="hidden items-center gap-2 rounded-md bg-brass-400 px-3.5 py-2.5 text-sm font-semibold text-ink-950 transition-colors hover:bg-brass-300 sm:inline-flex sm:px-4"
             >
               Get started
               <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
