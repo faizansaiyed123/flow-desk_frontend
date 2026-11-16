@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useLogin } from "@/hooks/use-auth";
 import { ApiError } from "@/lib/api-client";
+import { DEMO_MODE, DEMO_PASSWORD } from "@/lib/demo-api";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email address."),
@@ -20,8 +21,12 @@ export function LoginPage() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { email: "alex@northstar.demo", password: "Demo1234!" },
+  });
 
   const onSubmit = (values: FormValues) => login.mutate(values);
 
@@ -76,6 +81,29 @@ export function LoginPage() {
           Log in
         </Button>
       </form>
+
+      {DEMO_MODE && (
+        <div className="mt-4 rounded-[var(--radius-card)] border border-line-700 bg-ink-900 p-4">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-sm font-medium text-paper-100">Demo workspaces</p>
+            <span className="text-[11px] text-paper-500">Password: {DEMO_PASSWORD}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { label: "Owner", email: "alex@northstar.demo" },
+              { label: "Admin", email: "jordan@northstar.demo" },
+              { label: "Member", email: "sam@northstar.demo" },
+              { label: "Viewer", email: "taylor@northstar.demo" },
+            ].map((account) => (
+              <button key={account.email} type="button" onClick={() => { setValue("email", account.email); setValue("password", DEMO_PASSWORD); }} className="rounded-md border border-line-600 px-3 py-2 text-left text-xs text-paper-300 transition-colors hover:border-brass-400/50 hover:bg-ink-800">
+                <span className="block font-semibold text-paper-100">{account.label}</span>
+                <span className="mt-0.5 block truncate text-paper-500">{account.email}</span>
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 text-[11px] leading-5 text-paper-500">Changes are stored only in this browser. The demo does not need a running backend.</p>
+        </div>
+      )}
 
       <p className="mt-6 text-center text-sm text-paper-500">
         Don't have an account?{" "}
