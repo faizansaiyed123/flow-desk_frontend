@@ -118,7 +118,6 @@ function createSeedData(): DemoState {
     { id: "invoice_draft", tenant_id: TENANT_MAIN, invoice_number: "INV-0011", client_id: "client_aperture", project_id: "project_brand", status: "draft", issue_date: dateOnly(0), due_date: dateOnly(30), subtotal: 0, tax_rate: 8.5, tax_amount: 0, total: 0, notes: "Draft prepared from unbilled time.", paid_at: null, line_items: [], created_at: daysFromNow(-1) },
   ];
 
-  const now = new Date().toISOString();
   return {
     tenants, users, memberships, clients, projects, tasks, timeEntries, invoices,
     comments: [
