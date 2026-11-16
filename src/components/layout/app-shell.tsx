@@ -38,6 +38,7 @@ import { Badge } from "@/components/ui/badge";
 import { CommandPalette } from "@/components/layout/command-palette";
 import { formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { DEMO_MODE, resetDemoData } from "@/lib/demo-api";
 import type { Membership } from "@/types/api";
 
 const NAV_ITEMS = [
@@ -138,6 +139,12 @@ export function AppShell() {
       </aside>
 
       <div className="flex flex-1 flex-col overflow-hidden">
+        {DEMO_MODE && (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-brass-500/30 bg-brass-950/70 px-4 py-2 text-xs text-brass-200 md:px-6">
+            <p><strong>Interactive demo</strong> · Browser-local sample workspace. No real email, webhook delivery, or payment is sent.</p>
+            <button type="button" onClick={() => { resetDemoData(); window.location.reload(); }} className="rounded border border-brass-400/40 px-2.5 py-1 font-medium hover:bg-brass-900">Reset sample data</button>
+          </div>
+        )}
         <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-line-700 bg-ink-950 px-4 md:px-6">
           <div className="flex min-w-0 items-center gap-2">
             <button
