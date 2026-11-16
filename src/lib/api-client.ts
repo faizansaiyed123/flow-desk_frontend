@@ -1,6 +1,7 @@
 import { useAuthStore } from "@/stores/auth-store";
+import { DEMO_MODE, demoRequest } from "@/lib/demo-api";
 
-const API_BASE = "/api/v1";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
 export class ApiError extends Error {
   status: number;
@@ -50,7 +51,7 @@ function buildUrl(path: string, params?: RequestOptions["params"]): string {
       }
     });
   }
-  return url.pathname + url.search;
+  return url.origin === window.location.origin ? url.pathname + url.search : url.toString();
 }
 
 async function request<T>(
@@ -58,6 +59,8 @@ async function request<T>(
   options: RequestOptions = {},
   isRetry = false,
 ): Promise<T> {
+  if (DEMO_MODE) return demoRequest<T>(path, options);
+
   const { method = "GET", body, params, isFormData, skipAuth } = options;
   const { accessToken, currentTenantId } = useAuthStore.getState();
 
