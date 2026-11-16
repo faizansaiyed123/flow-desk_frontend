@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/stores/auth-store";
 
-export const DEMO_MODE = import.meta.env.VITE_FLOWDESK_BROWSER_DEMO !== "false";
+export const DEMO_MODE = import.meta.env.MODE !== "test" && import.meta.env.VITE_FLOWDESK_BROWSER_DEMO !== "false";
 export const DEMO_PASSWORD = "Demo1234!";
 
 type DemoOptions = {
