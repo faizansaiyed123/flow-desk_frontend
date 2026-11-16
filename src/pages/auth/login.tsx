@@ -23,10 +23,7 @@ export function LoginPage() {
     handleSubmit,
     setValue,
     formState: { errors },
-  } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: { email: "alex@northstar.demo", password: "Demo1234!" },
-  });
+  } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
   const onSubmit = (values: FormValues) => login.mutate(values);
 
