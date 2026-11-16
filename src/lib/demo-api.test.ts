@@ -31,11 +31,11 @@ describe("FlowDesk browser demo", () => {
     const clients = await demoRequest<{ items: Array<{ id: string }>; total: number }>("/clients", { params: { search: "Aperture" } });
     expect(clients.total).toBe(1);
 
-    const created = await demoRequest<{ id: string; name: string }>("/tasks", {
+    const created = await demoRequest<{ id: string; title: string }>("/tasks", {
       method: "POST",
       body: { project_id: "project_brand", title: "Prepare handoff deck", priority: "high" },
     });
-    expect(created.name).toBeUndefined();
+    expect(created.title).toBe("Prepare handoff deck");
 
     const updated = await demoRequest<{ status: string; completed_at: string | null }>("/tasks/" + created.id, {
       method: "PATCH",
